@@ -1,0 +1,82 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m cc_policy_lens *)",
+      "Bash(python3 -m unittest *)",
+      "Bash(python3 -m py_compile *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "WebFetch(domain:code.claude.com)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(pip install *)",
+      "Bash(pip3 install *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gcloud/**)",
+      "Read(~/.claude.json)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(sudo *)"
+    ],
+    "disableBypassPermissionsMode": "disable"
+  },
+  "sandbox": {
+    "enabled": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard_write.py"
+            ],
+            "onFailure": "block",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard_bash.py"
+            ],
+            "onFailure": "block",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/post_edit_check.py"
+            ],
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
