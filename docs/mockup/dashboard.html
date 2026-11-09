@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cc-policy-lens Report</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --panel-2:#f1f3f6; --text:#1b1f24; --muted:#5b6470; --line:#e2e6eb;
+  --accent:#3b5bdb; --accent-soft:#e8edff;
+  --crit:#c92a2a; --crit-soft:#fdecec; --high:#d9480f; --high-soft:#fff0e6;
+  --med:#b7791f; --med-soft:#fff7e0; --low:#1971c2; --low-soft:#e7f2fd;
+  --info:#5f6b7a; --info-soft:#eef1f4; --ok:#2b8a3e; --ok-soft:#e8f6ec; --na:#868e96;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --radius:12px; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1216; --panel:#171b21; --panel-2:#1e232b; --text:#e6e9ee; --muted:#9aa4b2; --line:#2a3039;
+    --accent:#8ea2ff; --accent-soft:#1f2747;
+    --crit:#ff8787; --crit-soft:#3a1d1f; --high:#ffa94d; --high-soft:#3a2716;
+    --med:#ffd43b; --med-soft:#332b12; --low:#74c0fc; --low-soft:#13293d;
+    --info:#adb5bd; --info-soft:#22272e; --ok:#69db7c; --ok-soft:#14301c; --na:#6c757d;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1216; --panel:#171b21; --panel-2:#1e232b; --text:#e6e9ee; --muted:#9aa4b2; --line:#2a3039;
+  --accent:#8ea2ff; --accent-soft:#1f2747;
+  --crit:#ff8787; --crit-soft:#3a1d1f; --high:#ffa94d; --high-soft:#3a2716;
+  --med:#ffd43b; --med-soft:#332b12; --low:#74c0fc; --low-soft:#13293d;
+  --info:#adb5bd; --info-soft:#22272e; --ok:#69db7c; --ok-soft:#14301c; --na:#6c757d;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Segoe UI","Noto Sans KR",sans-serif}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+code,.mono{font-family:var(--mono);font-size:.86em}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+header.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:12px;min-height:56px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+.brand{font-weight:700;letter-spacing:-.01em}
+.brand small{font-weight:500;color:var(--muted);margin-left:6px}
+.meta{color:var(--muted);font-size:13px;display:flex;gap:12px;flex-wrap:wrap}
+.spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--muted);white-space:nowrap}
+.pill.sample{border-color:var(--med);color:var(--med);background:var(--med-soft)}
+button{font:inherit;color:inherit;cursor:pointer}
+.ghost{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:5px 10px;font-size:13px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:none;padding:5px 10px;font-size:13px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+nav.jump{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+nav.jump a{padding:6px 10px;border-radius:8px;color:var(--muted);font-size:13px;white-space:nowrap}
+nav.jump a:hover{background:var(--panel-2);text-decoration:none;color:var(--text)}
+section{margin:28px 0}
+h2{font-size:18px;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+.hero{display:grid;grid-template-columns:1.25fr 2fr;gap:16px;margin-top:20px}
+.verdict{padding:20px;display:flex;flex-direction:column;gap:10px;border-left:6px solid var(--crit)}
+.verdict .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.verdict .big{font-size:26px;font-weight:750;line-height:1.25;letter-spacing:-.02em}
+.verdict p{margin:0;color:var(--muted);font-size:14px}
+.exit{font-family:var(--mono);font-size:12px;color:var(--crit)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{padding:16px;display:flex;flex-direction:column;gap:2px;cursor:pointer;border-top:4px solid var(--line);text-align:left}
+.stat:hover{border-color:var(--accent)}
+.stat .n{font-size:30px;font-weight:750;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat .t{font-size:13px;font-weight:600}
+.stat .d{font-size:12px;color:var(--muted)}
+.stat.fix{border-top-color:var(--crit)} .stat.fix .n{color:var(--crit)}
+.stat.review{border-top-color:var(--med)} .stat.review .n{color:var(--med)}
+.stat.good{border-top-color:var(--ok)} .stat.good .n{color:var(--ok)}
+.stat.na{border-top-color:var(--na)} .stat.na .n{color:var(--na)}
+.bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--panel-2);margin-top:4px}
+.bar span{display:block;height:100%}
+
+.layers{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.layer{padding:12px;position:relative}
+.layer .rank{position:absolute;top:10px;right:12px;font-size:11px;color:var(--muted);font-family:var(--mono)}
+.layer .nm{font-weight:650;font-size:14px}
+.layer .path{font-family:var(--mono);font-size:11px;color:var(--muted);word-break:break-all;margin:4px 0 8px}
+.layer .st{font-size:12px;display:inline-flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.st.on .dot{background:var(--ok)} .st.off .dot{background:var(--na)} .st.unk .dot{background:var(--med)}
+.layer.off{opacity:.7}
+
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start}
+.col{padding:0;overflow:hidden}
+.col>header{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.col>header h3{margin:0;font-size:15px}
+.col>header .cnt{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
+.col.fix>header{background:var(--crit-soft)} .col.fix .cnt{color:var(--crit)}
+.col.review>header{background:var(--med-soft)} .col.review .cnt{color:var(--med)}
+.col.good>header{background:var(--ok-soft)} .col.good .cnt{color:var(--ok)}
+.col .hint{font-size:12px;color:var(--muted);padding:8px 16px;border-bottom:1px solid var(--line)}
+.item{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:12px 16px}
+.item:last-child{border-bottom:0}
+.item:hover{background:var(--panel-2)}
+.item .row1{display:flex;gap:8px;align-items:baseline}
+.item .id{font-family:var(--mono);font-size:11.5px;color:var(--muted);flex:none}
+.item .ttl{font-weight:600;font-size:14px}
+.item .why{font-size:13px;color:var(--muted);margin:4px 0 6px}
+.tags{display:flex;gap:4px;flex-wrap:wrap}
+.tag{font-size:11px;border-radius:6px;padding:1px 6px;border:1px solid var(--line);color:var(--muted);background:var(--panel)}
+.tag.inc{border-color:var(--crit);color:var(--crit);background:var(--crit-soft)}
+.tag.off{border-color:var(--low);color:var(--low);background:var(--low-soft)}
+.tag.exp{border-color:var(--med);color:var(--med)}
+.tag.lv{font-family:var(--mono)}
+.sev{font-size:11px;font-weight:700;border-radius:6px;padding:1px 7px;text-transform:uppercase;letter-spacing:.03em;flex:none}
+.sev.critical{background:var(--crit-soft);color:var(--crit)} .sev.high{background:var(--high-soft);color:var(--high)}
+.sev.medium{background:var(--med-soft);color:var(--med)} .sev.low{background:var(--low-soft);color:var(--low)}
+.sev.info{background:var(--info-soft);color:var(--info)} .sev.pass{background:var(--ok-soft);color:var(--ok)}
+.sev.na{background:var(--info-soft);color:var(--na)}
+
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tab{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-size:13px;display:inline-flex;gap:6px;align-items:center}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .tab[aria-selected="true"]{color:#0f1216}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tab[aria-selected="true"]{color:#0f1216}}
+.tab .mini{font-size:11px;opacity:.85}
+.domain{padding:18px}
+.domain .lead{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
+.domain .lead h3{margin:0 0 4px;font-size:16px}
+.domain .lead p{margin:0;color:var(--muted);font-size:14px;max-width:70ch}
+.domain .rulechips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.rc{font-size:12px;border-radius:8px;padding:3px 8px;border:1px solid var(--line);background:var(--panel-2);display:inline-flex;gap:6px;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.k code{font-weight:600}
+.val{font-family:var(--mono);font-size:12.5px;background:var(--panel-2);border-radius:6px;padding:2px 6px;display:inline-block;max-width:100%;overflow-wrap:anywhere}
+.val.unset{background:none;color:var(--muted);font-style:italic;font-family:inherit;padding:0}
+.src{font-size:12px;white-space:nowrap}
+.src b{font-weight:600}
+.shadow{font-size:12px;color:var(--muted);margin-top:4px}
+.meaning{color:var(--muted);font-size:13px;min-width:220px}
+.table-scroll{overflow-x:auto}
+
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filters input{flex:1;min-width:180px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:8px;padding:7px 10px;font:inherit;font-size:14px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 11px;font-size:12.5px}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+details.f{border-bottom:1px solid var(--line)}
+details.f:last-of-type{border-bottom:0}
+details.f>summary{list-style:none;display:grid;grid-template-columns:auto 84px 1fr auto;gap:10px;align-items:center;padding:12px 16px;cursor:pointer}
+details.f>summary::-webkit-details-marker{display:none}
+details.f>summary:hover{background:var(--panel-2)}
+details.f>summary .chev{transition:transform .15s;color:var(--muted)}
+details.f[open]>summary .chev{transform:rotate(90deg)}
+details.f .ttl{font-weight:600}
+details.f .ttl small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.fbody{padding:4px 16px 18px 44px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.fbody h4{margin:0 0 6px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.fbody p{margin:0 0 8px;font-size:14px}
+.ev{background:var(--panel-2);border-radius:8px;padding:10px;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.fix-code{background:var(--panel-2);border-left:3px solid var(--ok);border-radius:6px;padding:10px;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.basis li{font-size:13.5px;margin-bottom:4px}
+.basis ul{margin:0;padding-left:18px}
+.empty{padding:24px;text-align:center;color:var(--muted)}
+
+.unk{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.unk .card{padding:14px}
+.unk h4{margin:0 0 6px;font-size:14px}
+.unk p{margin:0 0 8px;font-size:13px;color:var(--muted)}
+
+footer{color:var(--muted);font-size:12.5px;padding:24px 0 48px;border-top:1px solid var(--line);margin-top:36px}
+.flash{animation:flash 1.4s ease-out}
+@keyframes flash{0%{background:var(--accent-soft)}100%{background:transparent}}
+
+@media (max-width:900px){
+  .hero{grid-template-columns:1fr}
+  .cols{grid-template-columns:1fr}
+  .layers{grid-template-columns:repeat(3,1fr)}
+  .unk{grid-template-columns:1fr}
+  .fbody{grid-template-columns:1fr;padding-left:16px}
+}
+@media (max-width:560px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .layers{grid-template-columns:repeat(2,1fr)}
+  details.f>summary{grid-template-columns:auto 1fr auto}
+  details.f>summary .sevcell{display:none}
+  .meta{display:none}
+  th.hide-sm,td.hide-sm{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">cc-policy-lens<small data-i18n="brandSub"></small></div>
+    <div class="meta"><span id="m-target"></span><span id="m-time"></span></div>
+    <span class="pill sample" data-i18n="sample"></span>
+    <div class="spacer"></div>
+    <nav class="jump" id="jump"></nav>
+    <div class="seg" role="group" aria-label="Language">
+      <button type="button" data-lang="ko">KO</button><button type="button" data-lang="en">EN</button>
+    </div>
+    <button class="ghost" id="theme" type="button" data-i18n="theme"></button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="hero">
+    <div class="card verdict" id="verdict"></div>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <section>
+    <h2 data-i18n="layersH"></h2>
+    <p class="sub" data-i18n="layersSub"></p>
+    <div class="layers" id="layers"></div>
+  </section>
+
+  <section id="summary">
+    <h2 data-i18n="sumH"></h2>
+    <p class="sub" data-i18n="sumSub"></p>
+    <div class="cols">
+      <div class="card col fix"><header><h3 data-i18n="b_fix"></h3><span class="cnt" id="c-fix"></span></header>
+        <div class="hint" data-i18n="hintFix"></div><div id="l-fix"></div></div>
+      <div class="card col review"><header><h3 data-i18n="b_review"></h3><span class="cnt" id="c-review"></span></header>
+        <div class="hint" data-i18n="hintReview"></div><div id="l-review"></div></div>
+      <div class="card col good"><header><h3 data-i18n="b_good"></h3><span class="cnt" id="c-good"></span></header>
+        <div class="hint" data-i18n="hintGood"></div><div id="l-good"></div></div>
+    </div>
+  </section>
+
+  <section id="explore">
+    <h2 data-i18n="expH"></h2>
+    <p class="sub" data-i18n="expSub"></p>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="card domain" id="domain" role="tabpanel"></div>
+  </section>
+
+  <section id="findings">
+    <h2 data-i18n="findH"></h2>
+    <p class="sub" data-i18n="findSub"></p>
+    <div class="filters">
+      <input id="q" type="search">
+      <div id="fchips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div class="card" id="flist"></div>
+  </section>
+
+  <section id="unknown">
+    <h2 data-i18n="unkH"></h2>
+    <p class="sub" data-i18n="unkSub"></p>
+    <div class="unk" id="unk"></div>
+  </section>
+
+  <footer id="foot"></footer>
+</main>
+
+<script>
+/* ================================================================
+   SAMPLE DATA — 실제 렌더러에서는 Python이 JSON으로 주입한다.
+   번역 가능한 값은 {ko, en} 객체. 모든 값은 textContent로만 넣는다.
+   ================================================================ */
+const SCAN = { target:"~/work/acme-api", time:"2026-11-08 14:32", exitCode:1 };
+
+const UI = {
+ ko:{
+  brandSub:"설정 보안 리포트", sample:"샘플 데이터 · 시안", theme:"테마",
+  nav:[["#summary","요약"],["#explore","설정 둘러보기"],["#findings","모든 점검"],["#unknown","확인 불가"]],
+  target:"대상: ",
+  verdictLabel:"판정", verdictBig:n=>`반드시 고칠 설정 ${n}개`,
+  verdictP:"모든 Bash 명령 허용, 민감 파일 읽기, 버전 고정 안 된 MCP 서버가 핵심입니다. 이 5개를 고치면 critical·high 위반이 0이 됩니다.",
+  exit:c=>`exit code ${c} · critical/high 위반이 있어 CI에서 실패로 처리됩니다`,
+  stats:{fix:["반드시 수정","critical · high 위반"],review:["검토 필요","medium 이하 · 조직 통제"],good:["잘된 설정","룰 통과"],na:["해당 없음","대상 파일 없음"]},
+  layersH:"어떤 설정 파일을 읽었나",
+  layersSub:"같은 키가 여러 곳에 있으면 왼쪽(우선순위 높음)이 이깁니다. 단, permissions.allow/deny 같은 목록은 모든 계층이 합쳐집니다.",
+  layerSt:{on:"적용됨",off:"없음",unk:"확인 불가"},
+  sumH:"요약",
+  sumSub:"24개 룰을 근거(실제 사고 › 공식 문서 › 위협 프레임워크 › 전문가 판단) 순서로 판정했습니다. 항목을 누르면 상세 근거와 고치는 방법으로 이동합니다.",
+  b_fix:"반드시 수정", b_review:"검토 필요", b_good:"잘된 설정",
+  hintFix:"critical·high 위반. 이것부터 고치세요.",
+  hintReview:"의도한 설정인지 확인하세요. 개인 PC라면 그대로 둬도 되는 항목이 있습니다.",
+  hintGood:"이미 안전하게 설정되어 있습니다. 유지하세요.",
+  expH:"설정 둘러보기",
+  expSub:"영역별로 최종 적용값, 어느 파일에서 왔는지, 덮어써진 값, 그리고 그 설정이 실제로 뜻하는 바를 보여줍니다.",
+  th:["설정","최종 값","출처","무슨 뜻인가"], unset:"설정 안 됨", shadowed:"덮어써진 값: ",
+  tabFix:n=>`수정 ${n}`, tabReview:n=>`검토 ${n}`,
+  findH:"모든 점검 결과", findSub:"판정 조건, 발견 내용(시크릿은 마스킹), 출처 파일, 근거, 조치 방법.",
+  search:"ID, 제목, 설정 키로 검색",
+  filters:{all:"전체",fix:"반드시 수정",review:"검토 필요",good:"통과",na:"해당 없음",L1:"L1 사고 근거"},
+  hCheck:"판정 조건", hEv:"발견 내용", hFix:"고치는 방법", hNow:"현재 상태", hBasis:"근거", srcLbl:"출처: ",
+  bDoc:"공식 문서: ", bDocUnv:" (판정 기준은 문서 미확인)", bThreat:"위협: ", bInc:"사고: ",
+  bGrade:(b,l,s)=>`근거 등급: ${b} · ${l} · 룰 심각도 ${s}`,
+  noResult:"조건에 맞는 항목이 없습니다.",
+  pass:"통과", na:"해당 없음", incTag:"사고 ", unverTag:"키 미확인",
+  basis:{incident:"실제 사고",official:"공식 문서",framework:"프레임워크",expert:"전문가 판단"},
+  unkH:"파일로는 확인할 수 없는 것",
+  unkSub:"이 도구는 읽기 전용·오프라인이라 아래 항목은 판정하지 않습니다. Claude Code 안에서 직접 확인하세요.",
+  foot1:"근거: ", foot2:" v0.1 (2026-11-08 검토) · 위협 분류: ", foot3:" · 공식 문서: ",
+  foot4:"이 리포트는 설정 파일을 읽기만 했으며 아무것도 수정하지 않았습니다. 시크릿 값은 마스킹되어 있습니다."
+ },
+ en:{
+  brandSub:"Settings security report", sample:"Sample data · mockup", theme:"Theme",
+  nav:[["#summary","Summary"],["#explore","Explore settings"],["#findings","All checks"],["#unknown","Can't verify"]],
+  target:"Target: ",
+  verdictLabel:"Verdict", verdictBig:n=>`${n} settings must be fixed`,
+  verdictP:"The core issues are blanket Bash approval, readable sensitive files, and an unpinned MCP server. Fixing these 5 brings critical/high violations to zero.",
+  exit:c=>`exit code ${c} · fails CI because critical/high violations exist`,
+  stats:{fix:["Must fix","critical · high violations"],review:["Review","medium and below · org controls"],good:["Good","rules passed"],na:["Not applicable","target file absent"]},
+  layersH:"Which settings files were read",
+  layersSub:"When a key appears in several places, the leftmost (highest precedence) wins. Lists such as permissions.allow/deny are merged across all layers.",
+  layerSt:{on:"Applied",off:"Absent",unk:"Can't verify"},
+  sumH:"Summary",
+  sumSub:"24 rules judged by strength of evidence (real incident › official docs › threat framework › expert judgment). Click an item to jump to its evidence and fix.",
+  b_fix:"Must fix", b_review:"Review", b_good:"Good",
+  hintFix:"critical/high violations. Fix these first.",
+  hintReview:"Confirm these are intentional. Some are fine to leave as-is on a personal machine.",
+  hintGood:"Already configured safely. Keep them.",
+  expH:"Explore settings",
+  expSub:"For each area: the effective value, which file it came from, overridden values, and what the setting actually means.",
+  th:["Setting","Effective value","Source","What it means"], unset:"not set", shadowed:"Overridden: ",
+  tabFix:n=>`fix ${n}`, tabReview:n=>`review ${n}`,
+  findH:"All checks", findSub:"Condition, findings (secrets masked), source file, evidence, and remediation.",
+  search:"Search by ID, title, or settings key",
+  filters:{all:"All",fix:"Must fix",review:"Review",good:"Passed",na:"N/A",L1:"L1 incident-backed"},
+  hCheck:"Condition", hEv:"Findings", hFix:"How to fix", hNow:"Current state", hBasis:"Evidence", srcLbl:"Source: ",
+  bDoc:"Official docs: ", bDocUnv:" (criterion not confirmed in docs)", bThreat:"Threat: ", bInc:"Incident: ",
+  bGrade:(b,l,s)=>`Evidence: ${b} · ${l} · rule severity ${s}`,
+  noResult:"No matching items.",
+  pass:"Pass", na:"N/A", incTag:"Incident ", unverTag:"Key unverified",
+  basis:{incident:"Real incident",official:"Official docs",framework:"Framework",expert:"Expert judgment"},
+  unkH:"What files can't tell us",
+  unkSub:"This tool is read-only and offline, so it doesn't judge the items below. Check them inside Claude Code.",
+  foot1:"Evidence: ", foot2:" v0.1 (reviewed 2026-11-08) · Threat model: ", foot3:" · Official docs: ",
+  foot4:"This report only read settings files and changed nothing. Secret values are masked."
+ }
+};
+
+const LAYERS = [
+  {name:"Managed", path:"/Library/Application Support/ClaudeCode/managed-settings.json", state:"off", note:{ko:"파일 없음",en:"no file"}},
+  {name:{ko:"MDM / 서버",en:"MDM / server"}, path:"plist · claude.ai console", state:"unk", note:{ko:"파일로 확인 불가",en:"not visible as a file"}},
+  {name:"--settings", path:{ko:"실행 인자",en:"CLI argument"}, state:"unk", note:{ko:"세션마다 다름",en:"varies per session"}},
+  {name:"Local", path:".claude/settings.local.json", state:"on", note:{ko:"키 4개",en:"4 keys"}},
+  {name:"Project", path:".claude/settings.json", state:"on", note:{ko:"키 6개 · 레포에 커밋됨",en:"6 keys · committed to repo"}},
+  {name:"User", path:"~/.claude/settings.json", state:"on", note:{ko:"키 9개",en:"9 keys"}}
+];
+
+const ASI = {ASI01:"Agent Goal Hijack",ASI02:"Tool Misuse",ASI03:"Identity & Privilege Abuse",ASI04:"Agentic Supply Chain",ASI05:"Unexpected Code Execution",ASI06:"Memory & Context Poisoning",ASI08:"Cascading Failures"};
+const INC = {
+  "CVE-2025-59536":{t:{ko:"레포 Hook·MCP가 신뢰 확인 전 실행",en:"Repo hooks/MCP ran before trust confirmation"},u:"https://research.checkpoint.com/2026/rce-and-api-token-exfiltration-through-claude-code-project-files-cve-2025-59536/"},
+  "CVE-2026-21852":{t:{ko:"ANTHROPIC_BASE_URL로 API 키 유출",en:"API key leaked via ANTHROPIC_BASE_URL"},u:"https://research.checkpoint.com/2026/rce-and-api-token-exfiltration-through-claude-code-project-files-cve-2025-59536/"},
+  "postmark-mcp":{t:{ko:"npm MCP 패키지 악성 업데이트(1.0.16)",en:"Malicious update of an npm MCP package (1.0.16)"},u:"https://www.theregister.com/2025/09/29/postmark_mcp_server_code_hijacked/"}
+};
+const D = "https://code.claude.com/docs/en/";
+const NOTSET = {ko:"(설정 안 됨)",en:"(not set)"};
+const NOMANAGED = {ko:"managed 계층 없음",en:"no managed layer"};
+const NOFILE = {ko:"파일 없음",en:"no file"};
+
+const RULES = [
+ {id:"PERM-002",dom:"perm",sev:"high",lv:"L3",basis:"official",asi:["ASI03"],inc:[],st:"fail",
+  title:{ko:"bypassPermissions 잠금 미설정",en:"bypassPermissions lock not set"},
+  why:{ko:"누군가 --dangerously-skip-permissions로 모든 확인을 건너뛸 수 있습니다.",en:"Anyone can skip every prompt with --dangerously-skip-permissions."},
+  check:{ko:"유효 설정의 permissions.disableBypassPermissionsMode가 \"disable\"이 아님",en:"Effective permissions.disableBypassPermissionsMode is not \"disable\""},
+  ev:{ko:"permissions.disableBypassPermissionsMode = (설정 안 됨)\n검사한 계층: user, project, local",en:"permissions.disableBypassPermissionsMode = (not set)\nLayers checked: user, project, local"},
+  src:"—",
+  fix:{ko:'// ~/.claude/settings.json (개인 PC) 또는 managed 설정\n{\n  "permissions": {\n    "disableBypassPermissionsMode": "disable"\n  }\n}',en:'// ~/.claude/settings.json (personal) or managed settings\n{\n  "permissions": {\n    "disableBypassPermissionsMode": "disable"\n  }\n}'},
+  doc:D+"settings-reference#permissions-disablebypasspermissionsmode"},
+ {id:"PERM-003",dom:"perm",sev:"high",lv:"L2",basis:"official",asi:["ASI01","ASI02"],inc:[],st:"fail",
+  title:{ko:"민감 경로 Read 차단 누락 (3/5)",en:"Sensitive paths not denied for Read (3/5)"},
+  why:{ko:"~/.ssh, ~/.aws, *.pem을 Claude가 읽을 수 있습니다. 프롬프트 인젝션 시 유출 경로가 됩니다.",en:"Claude can read ~/.ssh, ~/.aws and *.pem — an exfiltration path under prompt injection."},
+  check:{ko:"permissions.deny에 ~/.ssh, ~/.aws, .env, .env.*, *.pem을 덮는 Read 규칙이 모두 있어야 함",en:"permissions.deny must have Read rules covering ~/.ssh, ~/.aws, .env, .env.*, *.pem"},
+  ev:{ko:"✔ Read(./.env)         ← project\n✔ Read(./.env.*)       ← project\n✘ ~/.ssh/**  규칙 없음\n✘ ~/.aws/**  규칙 없음\n✘ *.pem      규칙 없음",en:"✔ Read(./.env)         ← project\n✔ Read(./.env.*)       ← project\n✘ ~/.ssh/**  no rule\n✘ ~/.aws/**  no rule\n✘ *.pem      no rule"},
+  src:".claude/settings.json (project)",
+  fix:{ko:'// ~/.claude/settings.json — 홈 기준은 ~/, 전역은 // 로 시작\n{\n  "permissions": {\n    "deny": [\n      "Read(~/.ssh/**)",\n      "Read(~/.aws/**)",\n      "Read(//**/*.pem)"\n    ]\n  }\n}',en:'// ~/.claude/settings.json — use ~/ for home, // for filesystem root\n{\n  "permissions": {\n    "deny": [\n      "Read(~/.ssh/**)",\n      "Read(~/.aws/**)",\n      "Read(//**/*.pem)"\n    ]\n  }\n}'},
+  doc:D+"settings-reference#exclude-sensitive-files"},
+ {id:"PERM-004",dom:"perm",sev:"high",lv:"L2",basis:"official",asi:["ASI02","ASI05"],inc:[],st:"fail",
+  title:{ko:"모든 Bash 명령 자동 허용",en:"Every Bash command auto-approved"},
+  why:{ko:"Bash(*)는 Bash와 같아서 어떤 셸 명령이든 묻지 않고 실행합니다.",en:"Bash(*) equals Bash: any shell command runs without asking."},
+  check:{ko:"permissions.allow에 Bash, Bash(*) 등 모든 명령과 일치하는 규칙",en:"permissions.allow contains Bash, Bash(*) or another match-all rule"},
+  ev:'permissions.allow[2] = "Bash(*)"',
+  src:".claude/settings.local.json (local)",
+  fix:{ko:'// 전체 허용 대신 필요한 명령만\n"allow": [\n  "Bash(npm run test *)",\n  "Bash(git log *)"\n]',en:'// Allow only the commands you need\n"allow": [\n  "Bash(npm run test *)",\n  "Bash(git log *)"\n]'},
+  doc:D+"permissions"},
+ {id:"MCP-002",dom:"mcp",sev:"high",lv:"L1",basis:"incident",asi:["ASI04"],inc:["postmark-mcp"],st:"fail",unverified:true,
+  title:{ko:"MCP 서버를 버전 고정 없이 npx로 실행",en:"MCP server run via npx without a pinned version"},
+  why:{ko:"패키지에 악성 업데이트가 올라오면 다음 실행 때 그대로 받아 실행합니다(postmark-mcp 사례).",en:"A malicious package update is fetched and run on the next launch (as with postmark-mcp)."},
+  check:{ko:"MCP command가 npx/uvx 등이고 args에 정확한 버전이 없음",en:"MCP command is npx/uvx etc. and args lack an exact version"},
+  ev:'mcpServers.docs-search.command = "npx"\nmcpServers.docs-search.args    = ["-y", "@acme/docs-mcp"]',
+  src:".mcp.json (project MCP)",
+  fix:'"args": ["-y", "@acme/docs-mcp@2.3.1"]',
+  doc:D+"mcp"},
+ {id:"MCP-003",dom:"mcp",sev:"high",lv:"L2",basis:"official",asi:["ASI03"],inc:[],st:"fail",
+  title:{ko:"MCP 서버 env에 토큰 원문",en:"Plaintext token in MCP server env"},
+  why:{ko:"토큰이 설정 파일에 평문으로 있어 파일이 공유·백업되면 함께 유출됩니다.",en:"The token sits in plaintext; sharing or backing up the file leaks it."},
+  check:{ko:"MCP env/headers 값이 ${VAR} 참조가 아니고 시크릿 패턴과 일치",en:"MCP env/headers value is not a ${VAR} reference and matches a secret pattern"},
+  ev:{ko:'mcpServers.github.env.GITHUB_TOKEN = "ghp_****…(마스킹, 40자)"',en:'mcpServers.github.env.GITHUB_TOKEN = "ghp_****…(masked, 40 chars)"'},
+  src:"~/.claude.json → mcpServers (user)",
+  fix:{ko:'"env": { "GITHUB_TOKEN": "${GITHUB_TOKEN}" }\n// 토큰은 셸 환경변수나 키체인에서 주입',en:'"env": { "GITHUB_TOKEN": "${GITHUB_TOKEN}" }\n// Inject the token from your shell env or keychain'},
+  doc:D+"mcp"},
+
+ {id:"PERM-005",dom:"perm",sev:"medium",lv:"L2",basis:"official",asi:["ASI02","ASI01"],inc:[],st:"fail",
+  title:{ko:"curl 자동 허용",en:"curl auto-approved"},
+  why:{ko:"외부로 데이터를 보내는 가장 쉬운 경로입니다. 도메인 제한은 WebFetch 규칙이 더 안전합니다.",en:"The easiest way to send data out. WebFetch domain rules are a safer way to allow hosts."},
+  check:{ko:"permissions.allow에 curl, wget, nc, ncat, socat 규칙",en:"permissions.allow has curl, wget, nc, ncat or socat rules"},
+  ev:'permissions.allow[0] = "Bash(curl *)"',
+  src:"~/.claude/settings.json (user)",
+  fix:'"allow": ["WebFetch(domain:api.github.com)"],\n"deny":  ["Bash(curl *)", "Bash(wget *)"]',
+  doc:D+"permissions"},
+ {id:"PERM-006",dom:"perm",sev:"medium",lv:"L2",basis:"official",asi:["ASI04","ASI03"],inc:[],st:"fail",
+  title:{ko:"레포가 allow 규칙 2개를 추가",en:"Repo adds 2 allow rules"},
+  why:{ko:"폴더를 신뢰하는 순간 레포가 정한 권한이 생깁니다. 내용을 확인했다면 그대로 둬도 됩니다.",en:"Trusting the folder grants permissions the repo chose. Fine to keep once reviewed."},
+  check:{ko:"project 계층 permissions.allow / additionalDirectories가 비어 있지 않음",en:"Project-layer permissions.allow / additionalDirectories is non-empty"},
+  ev:'"Bash(npm run test *)"\n"Bash(git log *)"',
+  src:".claude/settings.json (project)",
+  fix:{ko:"내용이 의도한 것인지 PR 리뷰처럼 확인. 문제 없으면 조치 불필요.",en:"Review like a PR. No action needed if intended."},
+  doc:D+"permissions#project-allow-rules-and-workspace-trust"},
+ {id:"SBX-001",dom:"sbx",sev:"medium",lv:"L2",basis:"official",asi:["ASI05","ASI02"],inc:[],st:"fail",
+  title:{ko:"샌드박스를 못 켜면 그냥 실행",en:"Runs unsandboxed if sandbox can't start"},
+  why:{ko:"샌드박스는 켜져 있지만, 시작에 실패하면 샌드박스 없이 명령을 실행합니다.",en:"Sandbox is on, but if it fails to start, commands run without it."},
+  check:"sandbox.enabled == true && sandbox.failIfUnavailable != true",
+  ev:{ko:"sandbox.enabled = true            ← local\nsandbox.failIfUnavailable = (설정 안 됨)",en:"sandbox.enabled = true            ← local\nsandbox.failIfUnavailable = (not set)"},
+  src:".claude/settings.local.json (local)",
+  fix:'"sandbox": { "enabled": true, "failIfUnavailable": true }',
+  doc:D+"sandboxing"},
+ {id:"HOOK-001",dom:"hook",sev:"medium",lv:"L1",basis:"incident",asi:["ASI04","ASI05"],inc:["CVE-2025-59536"],st:"fail",
+  title:{ko:"레포에서 온 Hook 3개",en:"3 hooks from the repo"},
+  why:{ko:"Hook은 내 권한으로 샌드박스 밖에서 실행됩니다. 레포 Hook이 RCE로 악용된 사례가 있습니다.",en:"Hooks run with your privileges outside the sandbox. Repo hooks have been abused for RCE."},
+  check:{ko:"project/plugin/skill/agent 출처 Hook 목록화",en:"Inventory hooks from project/plugin/skill/agent sources"},
+  ev:"PreToolUse  · command · .claude/hooks/guard_bash.py\nPreToolUse  · command · .claude/hooks/guard_write.py\nPostToolUse · command · .claude/hooks/post_edit_check.py",
+  src:".claude/settings.json (project)",
+  fix:{ko:"각 스크립트를 읽고 의도한 동작인지 확인. 외부 레포라면 신뢰 승인 전에 확인.",en:"Read each script and confirm intent. For outside repos, check before accepting trust."},
+  doc:D+"hooks"},
+ {id:"HOOK-002",dom:"hook",sev:"medium",lv:"L2",basis:"official",asi:["ASI02","ASI08"],inc:[],st:"fail",
+  title:{ko:"정책 Hook이 실패하면 통과 (2개)",en:"Policy hooks fail open (2)"},
+  why:{ko:"Hook이 오류·타임아웃이면 기본값은 그냥 진행입니다. 차단용 Hook이라면 막아야 합니다.",en:"On error or timeout the default is to proceed. Blocking hooks should fail closed."},
+  check:{ko:"PreToolUse/PermissionRequest Hook의 onFailure != \"block\"",en:"PreToolUse/PermissionRequest hook has onFailure != \"block\""},
+  ev:{ko:"guard_bash.py  onFailure = (기본: continue)\nguard_write.py onFailure = (기본: continue)",en:"guard_bash.py  onFailure = (default: continue)\nguard_write.py onFailure = (default: continue)"},
+  src:".claude/settings.json (project)",
+  fix:{ko:'{ "type": "command", "command": "...", "onFailure": "block" }\n// Claude Code v2.1.295 이상',en:'{ "type": "command", "command": "...", "onFailure": "block" }\n// Requires Claude Code v2.1.295+'},
+  doc:D+"hooks"},
+ {id:"MCP-001",dom:"mcp",sev:"medium",lv:"L1",basis:"incident",asi:["ASI04","ASI05"],inc:["CVE-2025-59536"],st:"fail",
+  title:{ko:"레포가 MCP 서버 1개를 정의",en:"Repo defines 1 MCP server"},
+  why:{ko:"claude -p나 SDK에서는 승인 없이 로드됩니다. 자동 승인 키는 없어 위험도는 낮습니다.",en:"Loaded without approval in claude -p and the SDK. No auto-approve key, so risk is lower."},
+  check:{ko:".mcp.json에 서버 존재 / project의 enableAllProjectMcpServers",en:"Servers in .mcp.json / project enableAllProjectMcpServers"},
+  ev:{ko:"docs-search (stdio, npx)\nenableAllProjectMcpServers = (설정 안 됨) ✔",en:"docs-search (stdio, npx)\nenableAllProjectMcpServers = (not set) ✔"},
+  src:".mcp.json",
+  fix:{ko:"서버 출처를 확인. MCP-002(버전 고정)도 같이 해결.",en:"Verify the server's origin. Fix MCP-002 (pinning) too."},
+  doc:D+"mcp#mcp-installation-scopes"},
+ {id:"PLG-001",dom:"plg",sev:"medium",lv:"L3",basis:"official",asi:["ASI04"],inc:[],st:"fail",
+  title:{ko:"마켓플레이스 허용 목록 없음",en:"No marketplace allowlist"},
+  why:{ko:"조직 통제 항목입니다. 개인 PC라면 managed 설정이 없으므로 참고만 하세요.",en:"An org control. On a personal machine without managed settings, informational."},
+  check:{ko:"managed strictKnownMarketplaces / allowedMarketplaces 없음",en:"No managed strictKnownMarketplaces / allowedMarketplaces"},
+  ev:NOMANAGED,src:"—",
+  fix:'// managed-settings.json\n"strictKnownMarketplaces": [\n  { "source": "github", "repo": "anthropics/claude-plugins-official" }\n]',
+  doc:D+"settings-reference#strictknownmarketplaces"},
+ {id:"VER-001",dom:"ver",sev:"low",lv:"L3",basis:"incident",asi:["ASI04"],inc:["CVE-2025-59536","CVE-2026-21852"],st:"fail",
+  title:{ko:"최소 실행 버전 미설정",en:"No minimum required version"},
+  why:{ko:"위 CVE들은 업데이트로만 고쳐집니다. 조직이라면 구버전 실행을 막으세요.",en:"These CVEs are fixed only by updating. Orgs should block old versions."},
+  check:{ko:"managed requiredMinimumVersion 없음",en:"No managed requiredMinimumVersion"},
+  ev:NOMANAGED,src:"—",
+  fix:'// managed-settings.json\n"requiredMinimumVersion": "2.1.300"',
+  doc:D+"settings-reference#requiredminimumversion"},
+ {id:"HOOK-006",dom:"hook",sev:"info",lv:"L3",basis:"official",asi:["ASI04"],inc:[],st:"fail",
+  title:{ko:"managed Hook만 허용 안 함",en:"Managed-only hooks not enforced"},
+  why:{ko:"조직에서 Hook 출처를 통제하려면 켭니다. 개인 PC에서는 보통 끕니다.",en:"Turn on to control hook sources in an org. Usually off on a personal machine."},
+  check:"managed allowManagedHooksOnly != true",ev:NOMANAGED,src:"—",
+  fix:{ko:'"allowManagedHooksOnly": true  // managed 전용',en:'"allowManagedHooksOnly": true  // managed only'},
+  doc:D+"settings-reference#allowmanagedhooksonly"},
+ {id:"PLG-002",dom:"plg",sev:"info",lv:"L2",basis:"official",asi:["ASI04","ASI05"],inc:[],st:"fail",
+  title:{ko:"실행 코드를 가진 플러그인 2개",en:"2 plugins ship executable code"},
+  why:{ko:"플러그인의 Hook·MCP는 내 권한으로 샌드박스 밖에서 실행됩니다. 목록만 확인하세요.",en:"Plugin hooks and MCP servers run with your privileges outside the sandbox. Review the list."},
+  check:{ko:"활성 플러그인의 hooks, MCP, monitor, mod, bin/ 목록",en:"Inventory hooks, MCP, monitors, mods, bin/ in enabled plugins"},
+  ev:{ko:"formatter@acme-tools   hooks(1)  · autoUpdate on  · 서드파티\ndb-helper@acme-tools   MCP(1)    · autoUpdate on  · 서드파티",en:"formatter@acme-tools   hooks(1)  · autoUpdate on  · third-party\ndb-helper@acme-tools   MCP(1)    · autoUpdate on  · third-party"},
+  src:"~/.claude/plugins/",
+  fix:{ko:"claude plugin details <이름> 으로 구성 요소 확인",en:"Inspect with claude plugin details <name>"},
+  doc:D+"plugins/security"},
+
+ {id:"PERM-001",dom:"perm",sev:"critical",lv:"L2",basis:"official",asi:["ASI02","ASI03"],inc:[],st:"pass",
+  title:{ko:"기본 권한 모드가 안전함",en:"Default permission mode is safe"},
+  why:{ko:"defaultMode = acceptEdits. 모든 확인을 건너뛰는 모드가 아닙니다.",en:"defaultMode = acceptEdits — not the skip-everything mode."},
+  check:"permissions.defaultMode != bypassPermissions",ev:'permissions.defaultMode = "acceptEdits"  ← user',src:"~/.claude/settings.json (user)",fix:"—",
+  doc:D+"settings-reference#permissions-defaultmode"},
+ {id:"HOOK-003",dom:"hook",sev:"high",lv:"L1",basis:"incident",asi:["ASI04","ASI05","ASI02"],inc:["CVE-2025-59536"],st:"pass",
+  title:{ko:"Hook에 네트워크 전송 없음",en:"No network calls in hooks"},
+  why:{ko:"Hook 명령에서 curl, wget, URL 등을 찾지 못했습니다(문자열 기준 탐지).",en:"No curl, wget or URLs found in hook commands (string-based detection)."},
+  check:{ko:"Hook command/args에 네트워크 패턴",en:"Network patterns in hook command/args"},
+  ev:{ko:"검사한 Hook 3개 · 일치 0",en:"3 hooks checked · 0 matches"},src:"—",fix:"—",doc:D+"plugins/security"},
+ {id:"HOOK-004",dom:"hook",sev:"medium",lv:"L2",basis:"official",asi:["ASI05","ASI06"],inc:[],st:"pass",
+  title:{ko:"CLAUDE_ENV_FILE에 쓰는 Hook 없음",en:"No hook writes CLAUDE_ENV_FILE"},
+  why:{ko:"이후 모든 Bash 명령에 끼어드는 Hook이 없습니다.",en:"No hook injects into every later Bash command."},
+  check:{ko:"SessionStart/Setup/CwdChanged/FileChanged Hook의 CLAUDE_ENV_FILE 참조",en:"CLAUDE_ENV_FILE use in SessionStart/Setup/CwdChanged/FileChanged hooks"},
+  ev:{ko:"일치 0",en:"0 matches"},src:"—",fix:"—",doc:D+"hooks"},
+ {id:"HOOK-005",dom:"hook",sev:"medium",lv:"L2",basis:"official",asi:["ASI02","ASI04"],inc:[],st:"pass",
+  title:{ko:"HTTP Hook 없음",en:"No HTTP hooks"},
+  why:{ko:"외부 URL로 데이터를 보내는 Hook이 없습니다.",en:"No hook sends data to an external URL."},
+  check:{ko:"type: http Hook 존재 && allowedHttpHookUrls 미설정",en:"type: http hook exists && allowedHttpHookUrls unset"},
+  ev:{ko:"HTTP Hook 0개",en:"0 HTTP hooks"},src:"—",fix:"—",doc:D+"settings-reference#allowedhttphookurls"},
+ {id:"AGT-001",dom:"agt",sev:"medium",lv:"L2",basis:"official",asi:["ASI04","ASI05"],inc:[],st:"pass",
+  title:{ko:"서브에이전트에 Hook·권한 우회 없음",en:"No hooks or permission bypass in subagents"},
+  why:{ko:"security-reviewer 에이전트는 읽기 도구만 쓰고 Hook이 없습니다.",en:"security-reviewer uses read-only tools and has no hooks."},
+  check:{ko:"agents/*.md frontmatter의 hooks, permissionMode, mcpServers",en:"hooks, permissionMode, mcpServers in agents/*.md frontmatter"},
+  ev:"security-reviewer.md · tools: Read, Grep, Glob",src:".claude/agents/",fix:"—",doc:D+"sub-agents#supported-frontmatter-fields"},
+ {id:"WF-001",dom:"agt",sev:"info",lv:"L2",basis:"official",asi:["ASI01","ASI04"],inc:[],st:"pass",
+  title:{ko:"레포 워크플로우 스크립트 없음",en:"No workflow scripts in repo"},
+  why:{ko:".claude/workflows/ 디렉터리가 없습니다.",en:"No .claude/workflows/ directory."},
+  check:{ko:".claude/workflows/*.js 목록",en:"List .claude/workflows/*.js"},ev:"0",src:"—",fix:"—",doc:D+"workflows#save-the-workflow-for-reuse"},
+ {id:"ENV-001",dom:"env",sev:"high",lv:"L2",basis:"official",asi:["ASI03"],inc:[],st:"pass",
+  title:{ko:"env에 시크릿 원문 없음",en:"No plaintext secrets in env"},
+  why:{ko:"env 값에서 토큰 패턴을 찾지 못했습니다.",en:"No token patterns found in env values."},
+  check:{ko:"env 값의 시크릿 패턴",en:"Secret patterns in env values"},ev:{ko:"env 키 2개 검사 · 일치 0",en:"2 env keys checked · 0 matches"},src:"—",fix:"—",doc:D+"settings-reference#env"},
+
+ {id:"CFG-001",dom:"cfg",sev:"critical",lv:"L3",basis:"expert",asi:["ASI03"],inc:[],st:"na",unverified:true,
+  title:{ko:"managed 파일 권한",en:"Managed file permissions"},
+  why:{ko:"managed 설정 파일이 없어 해당 없음.",en:"No managed settings file, so not applicable."},
+  check:{ko:"managed 파일이 root 소유 & group/other 쓰기 금지",en:"Managed file is root-owned and not group/other-writable"},ev:NOFILE,src:"—",fix:"—",doc:D+"managed-settings#deploy-a-managed-settings-file"},
+ {id:"CFG-002",dom:"cfg",sev:"medium",lv:"L3",basis:"official",asi:["ASI08"],inc:[],st:"na",
+  title:{ko:"managed 파일 파싱",en:"Managed file parsing"},
+  why:{ko:"managed 설정 파일이 없어 해당 없음.",en:"No managed settings file, so not applicable."},
+  check:{ko:"managed 파일이 JSON 객체로 파싱됨",en:"Managed file parses as a JSON object"},ev:NOFILE,src:"—",fix:"—",doc:D+"managed-settings#find-entries-claude-code-dropped"}
+];
+
+const DOMAINS = [
+ {id:"perm",name:{ko:"권한",en:"Permissions"},
+  lead:{ko:"Claude가 묻지 않고 할 수 있는 일(allow), 물어봐야 하는 일(ask), 절대 못 하는 일(deny). 목록은 모든 계층이 합쳐지고, deny가 항상 이깁니다.",en:"What Claude may do without asking (allow), must ask about (ask), and may never do (deny). Lists merge across layers, and deny always wins."},
+  keys:[
+   {k:"permissions.defaultMode",v:'"acceptEdits"',src:"user",sh:[],m:{ko:"새 세션의 시작 모드. 파일 편집은 묻지 않고, 셸 명령은 물어봅니다.",en:"Starting mode for new sessions. File edits don't prompt; shell commands do."}},
+   {k:"permissions.allow",v:'["Bash(curl *)", "Bash(npm run test *)", "Bash(git log *)", "Bash(*)"]',src:"user + project + local",sh:[],m:{ko:"묻지 않고 실행하는 도구 사용. 여러 계층이 합쳐진 결과입니다.",en:"Tool uses that run without a prompt — merged from several layers."},rule:"PERM-004"},
+   {k:"permissions.deny",v:'["Read(./.env)", "Read(./.env.*)"]',src:"project",sh:[],m:{ko:"절대 허용하지 않는 사용. 내장 파일 도구와 cat·head 같은 Bash 명령에 적용됩니다.",en:"Never allowed. Applies to built-in file tools and Bash commands like cat and head."},rule:"PERM-003"},
+   {k:"permissions.ask",v:null,src:"",sh:[],m:{ko:"항상 확인을 받는 사용. 비어 있습니다.",en:"Always prompts. Empty."}},
+   {k:"permissions.disableBypassPermissionsMode",v:null,src:"",sh:[],m:{ko:"\"disable\"로 두면 모든 확인을 건너뛰는 모드를 아무도 켤 수 없습니다.",en:"Set to \"disable\" so no one can turn on the skip-all-prompts mode."},rule:"PERM-002"},
+   {k:"permissions.additionalDirectories",v:null,src:"",sh:[],m:{ko:"작업 폴더 밖에서 접근을 허용하는 디렉터리.",en:"Directories outside the working folder that Claude may access."}}
+  ]},
+ {id:"sbx",name:{ko:"샌드박스",en:"Sandbox"},
+  lead:{ko:"Bash 명령을 OS 수준에서 격리합니다. 파일 도구, MCP 서버, Hook은 샌드박스 밖에서 실행된다는 점에 주의하세요.",en:"Isolates Bash commands at the OS level. Note that file tools, MCP servers and hooks run outside it."},
+  keys:[
+   {k:"sandbox.enabled",v:"true",src:"local",sh:[{v:"false",src:"user"}],m:{ko:"Bash 명령 격리 켜짐. local 값이 user의 false를 덮어썼습니다.",en:"Bash isolation on. The local value overrides user's false."}},
+   {k:"sandbox.failIfUnavailable",v:null,src:"",sh:[],m:{ko:"샌드박스를 시작할 수 없을 때 실행을 멈출지. 미설정이면 격리 없이 실행합니다.",en:"Whether to stop when the sandbox can't start. If unset, commands run unisolated."},rule:"SBX-001"},
+   {k:"sandbox.allowUnsandboxedCommands",v:"false",src:"user",sh:[],m:{ko:"막힌 명령을 샌드박스 밖에서 다시 시도하지 않습니다. 좋습니다.",en:"Blocked commands are not retried outside the sandbox. Good."}},
+   {k:"sandbox.network.allowedDomains",v:'["registry.npmjs.org", "github.com"]',src:"user",sh:[],m:{ko:"샌드박스 안 명령이 접속할 수 있는 도메인.",en:"Domains sandboxed commands may reach."}}
+  ]},
+ {id:"hook",name:{ko:"Hooks",en:"Hooks"},
+  lead:{ko:"특정 시점에 자동으로 실행되는 명령입니다. 내 권한으로, 샌드박스 밖에서 실행되므로 출처가 중요합니다.",en:"Commands that run automatically at lifecycle points — with your privileges, outside the sandbox — so their origin matters."},
+  keys:[
+   {k:"hooks.PreToolUse",v:{ko:"2개 (guard_bash.py, guard_write.py)",en:"2 (guard_bash.py, guard_write.py)"},src:"project",sh:[],m:{ko:"도구 실행 직전에 검사. 실패 시 동작(onFailure)이 기본값 continue입니다.",en:"Checks before a tool runs. onFailure is the default, continue."},rule:"HOOK-002"},
+   {k:"hooks.PostToolUse",v:{ko:"1개 (post_edit_check.py)",en:"1 (post_edit_check.py)"},src:"project",sh:[],m:{ko:"도구 실행 직후 실행.",en:"Runs right after a tool."}},
+   {k:"allowedHttpHookUrls",v:null,src:"",sh:[],m:{ko:"HTTP Hook이 보낼 수 있는 URL. HTTP Hook이 없어 영향 없음.",en:"URLs HTTP hooks may target. No HTTP hooks, so no effect."}},
+   {k:"allowManagedHooksOnly",v:null,src:"",sh:[],m:{ko:"managed 전용. 조직이 배포한 Hook만 실행하게 합니다.",en:"Managed only. Runs only hooks your org deploys."},rule:"HOOK-006"}
+  ]},
+ {id:"mcp",name:{ko:"MCP 서버",en:"MCP servers"},
+  lead:{ko:"Claude에게 외부 도구를 연결합니다. stdio 서버는 내 PC에서 프로세스로 실행됩니다.",en:"Connect external tools to Claude. stdio servers run as processes on your machine."},
+  keys:[
+   {k:"docs-search",v:"npx -y @acme/docs-mcp",src:".mcp.json (project)",sh:[],m:{ko:"레포가 정의한 서버. 버전이 고정되지 않았습니다.",en:"Defined by the repo. Version not pinned."},rule:"MCP-002"},
+   {k:"github",v:'npx -y @modelcontextprotocol/server-github@0.6.2 · env.GITHUB_TOKEN="ghp_****…"',src:"~/.claude.json (user)",sh:[],m:{ko:"버전은 고정됐지만 토큰이 평문입니다.",en:"Pinned, but the token is plaintext."},rule:"MCP-003"},
+   {k:"enableAllProjectMcpServers",v:null,src:"",sh:[],m:{ko:"레포의 MCP 서버를 묻지 않고 승인. 설정 안 됨이 안전합니다.",en:"Approves repo MCP servers without asking. Unset is safest."}}
+  ]},
+ {id:"plg",name:{ko:"플러그인",en:"Plugins"},
+  lead:{ko:"스킬, 에이전트, Hook, MCP 서버를 묶어 설치합니다. 설치하면 내 권한으로 코드를 실행할 수 있습니다.",en:"Bundles of skills, agents, hooks and MCP servers. Installed plugins can run code with your privileges."},
+  keys:[
+   {k:"enabledPlugins",v:'{"formatter@acme-tools": true, "db-helper@acme-tools": true}',src:"user",sh:[],m:{ko:"활성 플러그인 2개.",en:"2 enabled plugins."},rule:"PLG-002"},
+   {k:"extraKnownMarketplaces",v:'{"acme-tools": github:acme/tools}',src:"user",sh:[],m:{ko:"추가로 등록한 마켓플레이스.",en:"Additionally registered marketplaces."}},
+   {k:"strictKnownMarketplaces",v:null,src:"",sh:[],m:{ko:"managed 전용 허용 목록.",en:"Managed-only allowlist."},rule:"PLG-001"}
+  ]},
+ {id:"agt",name:{ko:"에이전트·워크플로우",en:"Agents & workflows"},
+  lead:{ko:"서브에이전트 정의와 레포에 저장된 워크플로우 스크립트.",en:"Subagent definitions and workflow scripts saved in the repo."},
+  keys:[
+   {k:".claude/agents/security-reviewer.md",v:"tools: Read, Grep, Glob",src:"project",sh:[],m:{ko:"읽기 전용 리뷰 에이전트. Hook·권한 모드 지정 없음.",en:"Read-only review agent. No hooks or permission mode."}},
+   {k:".claude/workflows/",v:null,src:"",sh:[],m:{ko:"저장된 워크플로우 없음.",en:"No saved workflows."}}
+  ]},
+ {id:"env",name:{ko:"환경변수",en:"Environment"},
+  lead:{ko:"settings의 env는 모든 세션과 하위 프로세스에 전달되고, 파일에 평문으로 저장됩니다.",en:"env in settings reaches every session and subprocess, and is stored in plaintext."},
+  keys:[
+   {k:"env.DISABLE_TELEMETRY",v:'"1"',src:"user",sh:[],m:{ko:"사용량 통계 전송 끔.",en:"Usage telemetry off."}},
+   {k:"env.NODE_ENV",v:'"development"',src:"project",sh:[{v:'"test"',src:"user"}],m:{ko:"project 값이 user 값을 덮어씀.",en:"Project value overrides user value."}}
+  ]},
+ {id:"ver",name:{ko:"버전·조직 통제",en:"Version & org controls"},
+  lead:{ko:"managed 설정은 조직이 배포하며 개인 설정으로 덮을 수 없습니다. 이 PC에는 managed 설정 파일이 없습니다.",en:"Managed settings are deployed by your org and can't be overridden. This machine has no managed settings file."},
+  keys:[
+   {k:"requiredMinimumVersion",v:null,src:"",sh:[],m:{ko:"managed 전용. 이보다 오래된 버전은 시작을 거부합니다.",en:"Managed only. Older versions refuse to start."},rule:"VER-001"},
+   {k:"minimumVersion",v:null,src:"",sh:[],m:{ko:"자동 업데이트가 이 버전 아래로 내려가지 않게 합니다. 시작은 막지 않음.",en:"Keeps auto-update from going below this version. Doesn't block startup."}}
+  ]},
+ {id:"cfg",name:{ko:"managed 파일",en:"Managed files"},
+  lead:{ko:"managed 설정 파일 자체의 무결성(권한, 파싱).",en:"Integrity of the managed settings files themselves (permissions, parsing)."},
+  keys:[
+   {k:"managed-settings.json",v:null,src:"",sh:[],m:{ko:"파일 없음. 개인 PC라면 정상입니다.",en:"No file. Normal on a personal machine."}},
+   {k:"managed-settings.d/",v:null,src:"",sh:[],m:{ko:"없음.",en:"Absent."}},
+   {k:"managed-mcp.json",v:null,src:"",sh:[],m:{ko:"없음.",en:"Absent."}}
+  ]}
+];
+
+const UNKNOWN = [
+ {t:{ko:"MDM·서버 managed 설정",en:"MDM / server-managed settings"},p:{ko:"plist, 레지스트리, claude.ai 콘솔에서 오는 정책은 파일로 볼 수 없습니다.",en:"Policies from plist, registry or the claude.ai console aren't visible as files."},how:{ko:"/status → Setting sources 줄 확인",en:"/status → check the Setting sources line"}},
+ {t:{ko:"실행 플래그",en:"Launch flags"},p:{ko:"--dangerously-skip-permissions, --settings, --permission-mode는 세션마다 다릅니다.",en:"--dangerously-skip-permissions, --settings and --permission-mode vary per session."},how:{ko:"/permissions 로 현재 모드 확인",en:"/permissions to see the current mode"}},
+ {t:{ko:"폴더 신뢰 여부",en:"Folder trust"},p:{ko:"레포 allow·MCP 자동 승인은 workspace trust 후에만 적용됩니다.",en:"Repo allow rules and MCP auto-approval apply only after workspace trust."},how:"/status, claude doctor"},
+ {t:{ko:"실제 로드된 Hook",en:"Hooks actually loaded"},p:{ko:"파싱 오류로 건너뛴 Hook은 파일만으로 알 수 없습니다.",en:"Hooks skipped due to parse errors can't be seen from files alone."},how:"/hooks"},
+ {t:{ko:"Claude Code 버전",en:"Claude Code version"},p:{ko:"버전별로 동작이 다른 룰(onFailure 등)이 있습니다.",en:"Some rules (e.g. onFailure) behave differently by version."},how:"claude --version"},
+ {t:{ko:"플러그인 실제 구성",en:"Actual plugin contents"},p:{ko:"원격 플러그인은 설치 전 구성 요소를 다 볼 수 없습니다.",en:"Remote plugins can't be fully inspected before install."},how:{ko:"claude plugin details <이름>",en:"claude plugin details <name>"}}
+];
+
+/* ================================================================ */
+let lang = "ko";
+const L = x => (x && typeof x === "object" && !Array.isArray(x) && ("ko" in x || "en" in x)) ? (x[lang] ?? x.ko) : x;
+const T = k => UI[lang][k];
+const $ = (s, r=document) => r.querySelector(s);
+function el(tag, attrs={}, ...kids){
+  const n = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs)){
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v;
+    else if (k === "text") n.textContent = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()){ if (c != null) n.append(c instanceof Node ? c : document.createTextNode(String(c))); }
+  return n;
+}
+const clear = n => { n.textContent = ""; return n; };
+const bucket = r => r.st === "pass" ? "good" : r.st === "na" ? "na"
+  : (r.sev === "critical" || r.sev === "high") ? "fix" : "review";
+const sevOrder = {critical:0,high:1,medium:2,low:3,info:4};
+const counts = {fix:0,review:0,good:0,na:0};
+RULES.forEach(r => counts[bucket(r)]++);
+
+function sevBadge(r){
+  if (r.st === "pass") return el("span",{class:"sev pass",text:T("pass")});
+  if (r.st === "na") return el("span",{class:"sev na",text:T("na")});
+  return el("span",{class:"sev "+r.sev,text:r.sev});
+}
+function tags(r){
+  const t = [];
+  r.inc.forEach(i => t.push(el("span",{class:"tag inc",title:L(INC[i].t),text:T("incTag")+i})));
+  if (!r.inc.length) t.push(el("span",{class:"tag "+(r.basis==="expert"?"exp":"off"),text:T("basis")[r.basis]}));
+  r.asi.forEach(a => t.push(el("span",{class:"tag",title:ASI[a],text:a})));
+  t.push(el("span",{class:"tag lv",text:r.lv}));
+  if (r.unverified) t.push(el("span",{class:"tag exp",text:T("unverTag")}));
+  return el("div",{class:"tags"},t);
+}
+
+function renderStatic(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach(n => n.textContent = T(n.dataset.i18n));
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang===lang)));
+  const nav = clear($("#jump"));
+  T("nav").forEach(([h,t]) => nav.append(el("a",{href:h,text:t})));
+  $("#m-target").textContent = T("target") + SCAN.target;
+  $("#m-time").textContent = SCAN.time;
+  $("#q").placeholder = T("search"); $("#q").setAttribute("aria-label", T("search"));
+  const f = clear($("#foot"));
+  f.append(T("foot1"), el("code",{text:"docs/rules-catalog.json"}), T("foot2"),
+    el("a",{href:"https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",text:"OWASP Top 10 for Agentic Applications 2026"}),
+    T("foot3"), el("a",{href:"https://code.claude.com/docs/en/settings",text:"code.claude.com/docs"}),
+    el("br"), T("foot4"));
+}
+
+function renderHero(){
+  const v = clear($("#verdict"));
+  v.append(el("div",{class:"label",text:T("verdictLabel")}),
+    el("div",{class:"big",text:T("verdictBig")(counts.fix)}),
+    el("p",{text:T("verdictP")}),
+    el("div",{class:"exit",text:T("exit")(SCAN.exitCode)}));
+  const bar = el("div",{class:"bar"});
+  [["fix","var(--crit)"],["review","var(--med)"],["good","var(--ok)"],["na","var(--na)"]].forEach(([k,c]) =>
+    bar.append(el("span",{style:`width:${counts[k]/RULES.length*100}%;background:${c}`})));
+  v.append(bar);
+  const s = clear($("#stats"));
+  ["fix","review","good","na"].forEach(k => {
+    const [t,d] = T("stats")[k];
+    s.append(el("button",{class:"card stat "+k,type:"button",onclick:()=>{
+      if (k==="na"){ setFilter("na"); location.hash="#findings"; } else location.hash="#summary"; }},
+      el("span",{class:"n",text:counts[k]}), el("span",{class:"t",text:t}), el("span",{class:"d",text:d})));
+  });
+}
+
+function renderLayers(){
+  const box = clear($("#layers"));
+  LAYERS.forEach((l,i) => box.append(el("div",{class:"card layer "+(l.state==="off"?"off":"")},
+    el("span",{class:"rank",text:"#"+(i+1)}),
+    el("div",{class:"nm",text:L(l.name)}),
+    el("div",{class:"path",text:L(l.path)}),
+    el("span",{class:"st "+l.state},el("span",{class:"dot"}),`${T("layerSt")[l.state]} · ${L(l.note)}`))));
+}
+
+function goto(id){
+  const d = document.getElementById("f-"+id);
+  if (!d) return;
+  $("#q").value = ""; setFilter("all");
+  d.open = true; d.scrollIntoView({behavior:"smooth",block:"center"});
+  d.classList.remove("flash"); void d.offsetWidth; d.classList.add("flash");
+}
+
+function renderSummary(){
+  ["fix","review","good"].forEach(b => {
+    const list = RULES.filter(r => bucket(r)===b).sort((a,c)=>sevOrder[a.sev]-sevOrder[c.sev] || a.lv.localeCompare(c.lv));
+    $("#c-"+b).textContent = list.length;
+    const host = clear($("#l-"+b));
+    list.forEach(r => host.append(el("button",{class:"item",type:"button",onclick:()=>goto(r.id)},
+      el("div",{class:"row1"}, b==="good"?null:sevBadge(r), el("span",{class:"id",text:r.id}), el("span",{class:"ttl",text:L(r.title)})),
+      el("div",{class:"why",text:L(r.why)}), tags(r))));
+  });
+}
+
+let curDom = "perm";
+function domainStatus(id){
+  const rs = RULES.filter(r=>r.dom===id);
+  return {fix:rs.filter(r=>bucket(r)==="fix").length, review:rs.filter(r=>bucket(r)==="review").length, good:rs.filter(r=>bucket(r)==="good").length, rs};
+}
+function renderTabs(){
+  const t = clear($("#tabs"));
+  DOMAINS.forEach(d => {
+    const s = domainStatus(d.id);
+    const dotc = s.fix ? "var(--crit)" : s.review ? "var(--med)" : s.good ? "var(--ok)" : "var(--na)";
+    t.append(el("button",{class:"tab",role:"tab",type:"button","aria-selected":String(d.id===curDom),onclick:()=>{curDom=d.id;renderTabs();renderDomain();}},
+      el("span",{class:"dot",style:"background:"+dotc}), L(d.name),
+      el("span",{class:"mini",text: s.fix? T("tabFix")(s.fix) : s.review? T("tabReview")(s.review) : ""})));
+  });
+}
+function ruleChip(id, style){
+  const r = RULES.find(x=>x.id===id);
+  return el("button",{class:"rc",type:"button",style,onclick:()=>goto(r.id)},sevBadge(r),el("span",{class:"mono",text:r.id}));
+}
+function renderDomain(){
+  const d = DOMAINS.find(x=>x.id===curDom), s = domainStatus(d.id), box = clear($("#domain"));
+  const chips = el("div",{class:"rulechips"}, s.rs.map(r => ruleChip(r.id)));
+  box.append(el("div",{class:"lead"}, el("div",{}, el("h3",{text:L(d.name)}), el("p",{text:L(d.lead)})), chips));
+  const tb = el("tbody");
+  d.keys.forEach(k => {
+    const valCell = k.v==null ? el("span",{class:"val unset",text:T("unset")}) : el("span",{class:"val",text:L(k.v)});
+    const sh = k.sh.length ? el("div",{class:"shadow"},T("shadowed"), ...k.sh.map(x=>el("span",{}, el("s",{text:x.v})," ("+x.src+") "))) : null;
+    tb.append(el("tr",{},
+      el("td",{class:"k"},el("code",{text:k.k})),
+      el("td",{},valCell,sh),
+      el("td",{class:"src hide-sm"}, k.src ? el("b",{text:k.src}) : el("span",{style:"color:var(--muted)",text:"—"})),
+      el("td",{class:"meaning"},L(k.m), k.rule ? el("div",{},ruleChip(k.rule,"margin-top:6px")) : null)));
+  });
+  const th = T("th");
+  box.append(el("div",{class:"table-scroll"},el("table",{},
+    el("thead",{},el("tr",{},el("th",{text:th[0]}),el("th",{text:th[1]}),el("th",{class:"hide-sm",text:th[2]}),el("th",{text:th[3]}))), tb)));
+}
+
+let filt = "all";
+function renderChips(){
+  const box = clear($("#fchips"));
+  Object.entries(T("filters")).forEach(([f,t]) =>
+    box.append(el("button",{class:"chip",type:"button","data-f":f,"aria-pressed":String(f===filt),onclick:()=>setFilter(f),text:t})));
+}
+function setFilter(f){
+  filt = f;
+  document.querySelectorAll("#fchips .chip").forEach(c=>c.setAttribute("aria-pressed", String(c.dataset.f===f)));
+  applyFilter();
+}
+function renderFindings(){
+  const open = new Set([...document.querySelectorAll("details.f[open]")].map(d=>d.id));
+  const host = clear($("#flist"));
+  const order = {fix:0,review:1,good:2,na:3};
+  [...RULES].sort((a,b)=>order[bucket(a)]-order[bucket(b)] || sevOrder[a.sev]-sevOrder[b.sev]).forEach(r => {
+    const basisList = el("ul",{},
+      el("li",{},T("bDoc"), el("a",{href:r.doc,target:"_blank",rel:"noopener",text:r.doc.replace(D,"")}), r.unverified? T("bDocUnv"):""),
+      el("li",{},T("bThreat")+r.asi.map(a=>a+" "+ASI[a]).join(", ")),
+      ...r.inc.map(i => el("li",{},T("bInc"), el("a",{href:INC[i].u,target:"_blank",rel:"noopener",text:i}), " — "+L(INC[i].t))),
+      el("li",{},T("bGrade")(T("basis")[r.basis], r.lv, r.sev)));
+    const search = [r.id, r.title.ko, r.title.en, L(r.check), L(r.ev)].join(" ").toLowerCase();
+    host.append(el("details",{class:"f",id:"f-"+r.id,open:open.has("f-"+r.id),"data-b":bucket(r),"data-lv":r.lv,"data-s":search},
+      el("summary",{},
+        el("span",{class:"chev",text:"›"}),
+        el("span",{class:"sevcell"},sevBadge(r)),
+        el("span",{class:"ttl"}, el("span",{class:"mono",style:"color:var(--muted);margin-right:8px",text:r.id}), L(r.title), el("small",{text:L(r.why)})),
+        el("span",{class:"tag lv",text:r.lv})),
+      el("div",{class:"fbody"},
+        el("div",{},
+          el("h4",{text:T("hCheck")}), el("p",{text:L(r.check)}),
+          el("h4",{text:T("hEv")}), el("pre",{class:"ev",text:L(r.ev)}),
+          el("p",{style:"font-size:12.5px;color:var(--muted);margin-top:6px",text:T("srcLbl")+r.src})),
+        el("div",{},
+          el("h4",{text: r.st==="fail" ? T("hFix") : T("hNow")}), el("pre",{class:"fix-code",text: r.st==="fail" ? L(r.fix) : L(r.why)}),
+          el("h4",{style:"margin-top:14px",text:T("hBasis")}), el("div",{class:"basis"},basisList)))));
+  });
+  host.append(el("div",{class:"empty",id:"noresult",hidden:true,text:T("noResult")}));
+  applyFilter();
+}
+function applyFilter(){
+  const q = $("#q").value.trim().toLowerCase(); let shown = 0;
+  document.querySelectorAll("details.f").forEach(d => {
+    const okF = filt==="all" || d.dataset.b===filt || (filt==="L1" && d.dataset.lv==="L1");
+    const ok = okF && (!q || d.dataset.s.includes(q));
+    d.hidden = !ok; if (ok) shown++;
+  });
+  const nr = $("#noresult"); if (nr) nr.hidden = shown>0;
+}
+$("#q").addEventListener("input", applyFilter);
+
+function renderUnknown(){
+  const box = clear($("#unk"));
+  UNKNOWN.forEach(u => box.append(el("div",{class:"card"}, el("h4",{text:L(u.t)}), el("p",{text:L(u.p)}), el("code",{text:L(u.how)}))));
+}
+
+function renderAll(){
+  renderStatic(); renderHero(); renderLayers(); renderSummary();
+  renderTabs(); renderDomain(); renderChips(); renderFindings(); renderUnknown();
+}
+
+/* language */
+(function initLang(){
+  const KEY = "ccpl-lang";
+  let saved = null;
+  try { saved = localStorage.getItem(KEY); } catch(e){}
+  const fromUrl = new URLSearchParams(location.search).get("lang");
+  lang = [fromUrl, saved].find(x => x==="ko"||x==="en") || ((navigator.language||"").toLowerCase().startsWith("ko") ? "ko" : "en");
+  document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+    lang = b.dataset.lang;
+    try { localStorage.setItem(KEY, lang); } catch(e){}
+    renderAll();
+  }));
+  renderAll();
+})();
+
+/* theme */
+(function theme(){
+  const root = document.documentElement, KEY = "ccpl-theme";
+  try { const s = localStorage.getItem(KEY); if (s) root.dataset.theme = s; } catch(e){}
+  $("#theme").addEventListener("click", () => {
+    const dark = root.dataset.theme ? root.dataset.theme==="dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem(KEY, root.dataset.theme); } catch(e){}
+  });
+})();
+</script>
+</body>
+</html>
