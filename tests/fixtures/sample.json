@@ -1,0 +1,133 @@
+{
+  "_comment": "Sample layer tree for tests. Paths are relative to a temp root; __PROJECT__ is replaced with the temp project path. No secrets: tests add fakes at runtime.",
+  "files": {
+    "home/.claude/settings.json": {
+      "permissions": {
+        "defaultMode": "acceptEdits",
+        "allow": [
+          "Bash(curl *)"
+        ],
+        "deny": [
+          "Read(~/.ssh/**)"
+        ]
+      },
+      "sandbox": {
+        "enabled": false,
+        "allowUnsandboxedCommands": false
+      },
+      "env": {
+        "DISABLE_TELEMETRY": "1",
+        "NODE_ENV": "test"
+      },
+      "enabledPlugins": {
+        "formatter@acme-tools": true
+      }
+    },
+    "home/.claude.json": {
+      "numStartups": 12,
+      "oauthAccount": {
+        "emailAddress": "someone@example.com"
+      },
+      "mcpServers": {
+        "github": {
+          "type": "stdio",
+          "command": "npx",
+          "args": [
+            "-y",
+            "@modelcontextprotocol/server-github@0.6.2"
+          ],
+          "env": {
+            "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+          }
+        }
+      },
+      "projects": {
+        "__PROJECT__": {
+          "hasTrustDialogAccepted": true,
+          "allowedTools": [],
+          "history": [
+            "x"
+          ]
+        }
+      }
+    },
+    "home/.claude/agents/notes.md": "---\nname: notes\ndescription: take notes\ntools: Read, Write\n---\nTake notes.\n",
+    "home/.claude/plugins/cache/acme-tools/formatter/1.2.0/hooks/hooks.json": {
+      "hooks": {
+        "PostToolUse": [
+          {
+            "matcher": "Edit",
+            "hooks": [
+              {
+                "type": "command",
+                "command": "${CLAUDE_PLUGIN_ROOT}/bin/fmt"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "home/.claude/plugins/cache/acme-tools/formatter/1.2.0/.claude-plugin/plugin.json": {
+      "name": "formatter",
+      "version": "1.2.0"
+    },
+    "project/.claude/settings.json": {
+      "permissions": {
+        "allow": [
+          "Bash(npm run test *)",
+          "Bash(git log *)"
+        ],
+        "deny": [
+          "Read(./.env)",
+          "Read(./.env.*)"
+        ]
+      },
+      "sandbox": {
+        "enabled": true
+      },
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "hooks": {
+        "PreToolUse": [
+          {
+            "matcher": "Bash",
+            "hooks": [
+              {
+                "type": "command",
+                "command": "python3",
+                "args": [
+                  "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard.py"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "project/.claude/settings.local.json": {
+      "permissions": {
+        "allow": [
+          "Bash(*)"
+        ]
+      },
+      "sandbox": {
+        "failIfUnavailable": true
+      }
+    },
+    "project/.claude/hooks/guard.py": "import sys, json\njson.load(sys.stdin)\nsys.exit(0)\n",
+    "project/.claude/agents/reviewer.md": "---\nname: reviewer\ndescription: review code\ntools: Read, Grep, Glob\n---\nReview.\n",
+    "project/.claude/skills/release/SKILL.md": "---\nname: release\ndescription: cut a release\nhooks:\n  PreToolUse:\n    - matcher: Bash\n      hooks:\n        - type: command\n          command: ./scripts/check.sh\n---\nRelease steps.\n",
+    "project/.mcp.json": {
+      "mcpServers": {
+        "docs-search": {
+          "command": "npx",
+          "args": [
+            "-y",
+            "@acme/docs-mcp"
+          ]
+        }
+      }
+    }
+  }
+}
