@@ -16,30 +16,30 @@ level 기준: L1 = 실제 사고(incident) 근거가 있는 우선 점검 룰, L
 
 | ID | 제목 | 영역 | Level | 심각도 | 근거 | 확인 | OWASP ASI | 사고 | 상태 |
 |---|---|---|---|---|---|---|---|---|---|
-| CFG-001 | managed 설정 파일을 일반 사용자가 수정할 수 있음 | config-integrity | L3 | critical | expert | ⚠️ | ASI03 | — | todo |
-| CFG-002 | managed 설정 파일이 JSON 객체로 파싱되지 않음 | config-integrity | L3 | medium | official | ✅ | ASI08 | — | todo |
-| PERM-001 | 기본 권한 모드가 bypassPermissions | permissions | L2 | critical | official | ✅ | ASI02, ASI03 | — | todo |
-| PERM-002 | bypassPermissions 모드 잠금(disableBypassPermissionsMode) 미설정 | permissions | L3 | high | official | ✅ | ASI03 | — | todo |
-| PERM-003 | 민감 경로에 대한 Read deny 규칙 누락 | permissions | L2 | high | official | ✅ | ASI01, ASI02 | — | todo |
-| PERM-004 | 모든 Bash 명령을 허용하는 광범위 allow 규칙 | permissions | L2 | high | official | ✅ | ASI02, ASI05 | — | todo |
-| PERM-005 | 네트워크 도구(curl, wget, nc 등)를 allow | permissions | L2 | medium | official | ✅ | ASI02, ASI01 | — | todo |
-| PERM-006 | 레포의 공유 설정(.claude/settings.json)이 allow 규칙을 추가함 | permissions | L2 | medium | official | ✅ | ASI04, ASI03 | — | todo |
-| SBX-001 | Bash 샌드박스 비활성 또는 실패 시 무방비 실행 | sandbox | L2 | high | official | ✅ | ASI05, ASI02 | — | todo |
-| HOOK-001 | 레포, 플러그인, 스킬, 서브에이전트에서 온 Hook (공급망 검토 대상) | hooks | L1 | medium | incident | ✅ | ASI04, ASI05 | CVE-2025-59536 | todo |
-| HOOK-002 | 정책 Hook(PreToolUse/PermissionRequest)이 실패하면 그냥 통과함(fail open) | hooks | L2 | medium | official | ✅ | ASI02, ASI08 | — | todo |
-| HOOK-003 | Hook 명령에 네트워크 전송 패턴 포함 | hooks | L1 | high | incident | ✅ | ASI04, ASI05, ASI02 | CVE-2025-59536 | todo |
-| HOOK-004 | Hook이 CLAUDE_ENV_FILE에 기록 (이후 모든 Bash 명령 앞에 실행됨) | hooks | L2 | medium | official | ✅ | ASI05, ASI06 | — | todo |
-| HOOK-005 | HTTP Hook이 있는데 전송 URL 허용 목록(allowedHttpHookUrls) 미설정 | hooks | L2 | medium | official | ✅ | ASI02, ASI04 | — | todo |
-| HOOK-006 | managed Hook만 허용(allowManagedHooksOnly) 미설정 | hooks | L3 | info | official | ✅ | ASI04 | — | todo |
-| MCP-001 | 레포의 .mcp.json이 MCP 서버를 정의함 | mcp | L1 | medium | incident | ✅ | ASI04, ASI05 | CVE-2025-59536 | todo |
-| MCP-002 | stdio MCP 서버를 버전 고정 없이 패키지 러너로 실행 | mcp | L1 | high | incident | ⚠️ | ASI04 | postmark-mcp-backdoor | todo |
-| MCP-003 | MCP 서버 env/headers에 시크릿 원문 | mcp | L2 | high | official | ✅ | ASI03 | — | todo |
-| PLG-001 | 플러그인 마켓플레이스 허용 목록(strictKnownMarketplaces) 미설정 | plugins | L3 | medium | official | ✅ | ASI04 | — | todo |
-| PLG-002 | 활성 플러그인 중 실행 코드(Hook, MCP, monitor, mod, bin/)를 포함한 것 | plugins | L2 | info | official | ✅ | ASI04, ASI05 | — | todo |
-| WF-001 | 레포에 동적 워크플로우 스크립트(.claude/workflows/*.js) 존재 | workflows | L2 | info | official | ✅ | ASI01, ASI04 | — | todo |
-| AGT-001 | 서브에이전트 frontmatter에 Hook, 인라인 MCP, 권한 모드 정의 | agents | L2 | medium | official | ✅ | ASI04, ASI05 | — | todo |
-| ENV-001 | settings의 env에 시크릿 원문 | env | L2 | high | official | ✅ | ASI03 | — | todo |
-| VER-001 | managed에 최소 실행 버전(requiredMinimumVersion) 미설정 | version | L3 | low | incident | ✅ | ASI04 | CVE-2025-59536, CVE-2026-21852 | todo |
+| CFG-001 | managed 설정 파일을 일반 사용자가 수정할 수 있음 | config-integrity | L3 | critical | expert | ⚠️ | ASI03 | — | done |
+| CFG-002 | managed 설정 파일이 JSON 객체로 파싱되지 않음 | config-integrity | L3 | medium | official | ✅ | ASI08 | — | done |
+| PERM-001 | 기본 권한 모드가 bypassPermissions | permissions | L2 | critical | official | ✅ | ASI02, ASI03 | — | done |
+| PERM-002 | bypassPermissions 모드 잠금(disableBypassPermissionsMode) 미설정 | permissions | L3 | high | official | ✅ | ASI03 | — | done |
+| PERM-003 | 민감 경로에 대한 Read deny 규칙 누락 | permissions | L2 | high | official | ✅ | ASI01, ASI02 | — | done |
+| PERM-004 | 모든 Bash 명령을 허용하는 광범위 allow 규칙 | permissions | L2 | high | official | ✅ | ASI02, ASI05 | — | done |
+| PERM-005 | 네트워크 도구(curl, wget, nc 등)를 allow | permissions | L2 | medium | official | ✅ | ASI02, ASI01 | — | done |
+| PERM-006 | 레포의 공유 설정(.claude/settings.json)이 allow 규칙을 추가함 | permissions | L2 | medium | official | ✅ | ASI04, ASI03 | — | done |
+| SBX-001 | Bash 샌드박스 비활성 또는 실패 시 무방비 실행 | sandbox | L2 | high | official | ✅ | ASI05, ASI02 | — | done |
+| HOOK-001 | 레포, 플러그인, 스킬, 서브에이전트에서 온 Hook (공급망 검토 대상) | hooks | L1 | medium | incident | ✅ | ASI04, ASI05 | CVE-2025-59536 | done |
+| HOOK-002 | 정책 Hook(PreToolUse/PermissionRequest)이 실패하면 그냥 통과함(fail open) | hooks | L2 | medium | official | ✅ | ASI02, ASI08 | — | done |
+| HOOK-003 | Hook 명령에 네트워크 전송 패턴 포함 | hooks | L1 | high | incident | ✅ | ASI04, ASI05, ASI02 | CVE-2025-59536 | done |
+| HOOK-004 | Hook이 CLAUDE_ENV_FILE에 기록 (이후 모든 Bash 명령 앞에 실행됨) | hooks | L2 | medium | official | ✅ | ASI05, ASI06 | — | done |
+| HOOK-005 | HTTP Hook이 있는데 전송 URL 허용 목록(allowedHttpHookUrls) 미설정 | hooks | L2 | medium | official | ✅ | ASI02, ASI04 | — | done |
+| HOOK-006 | managed Hook만 허용(allowManagedHooksOnly) 미설정 | hooks | L3 | info | official | ✅ | ASI04 | — | done |
+| MCP-001 | 레포의 .mcp.json이 MCP 서버를 정의함 | mcp | L1 | medium | incident | ✅ | ASI04, ASI05 | CVE-2025-59536 | done |
+| MCP-002 | stdio MCP 서버를 버전 고정 없이 패키지 러너로 실행 | mcp | L1 | high | incident | ⚠️ | ASI04 | postmark-mcp-backdoor | done |
+| MCP-003 | MCP 서버 env/headers에 시크릿 원문 | mcp | L2 | high | official | ✅ | ASI03 | — | done |
+| PLG-001 | 플러그인 마켓플레이스 허용 목록(strictKnownMarketplaces) 미설정 | plugins | L3 | medium | official | ✅ | ASI04 | — | done |
+| PLG-002 | 활성 플러그인 중 실행 코드(Hook, MCP, monitor, mod, bin/)를 포함한 것 | plugins | L2 | info | official | ✅ | ASI04, ASI05 | — | done |
+| WF-001 | 레포에 동적 워크플로우 스크립트(.claude/workflows/*.js) 존재 | workflows | L2 | info | official | ✅ | ASI01, ASI04 | — | done |
+| AGT-001 | 서브에이전트 frontmatter에 Hook, 인라인 MCP, 권한 모드 정의 | agents | L2 | medium | official | ✅ | ASI04, ASI05 | — | done |
+| ENV-001 | settings의 env에 시크릿 원문 | env | L2 | high | official | ✅ | ASI03 | — | done |
+| VER-001 | managed에 최소 실행 버전(requiredMinimumVersion) 미설정 | version | L3 | low | incident | ✅ | ASI04 | CVE-2025-59536, CVE-2026-21852 | done |
 
 상태: todo → done → verified (공식 문서로 키 확인 완료). 확인 열의 ⚠️는 verified=false.
 

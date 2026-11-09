@@ -1,0 +1,60 @@
+{
+  "rule": "CFG-002",
+  "cases": [
+    {
+      "name": "broken managed json",
+      "files": {
+        "managed/managed-settings.json": "{ broken"
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1,
+        "message_contains": "refuses to start"
+      }
+    },
+    {
+      "name": "valid managed json",
+      "files": {
+        "managed/managed-settings.json": {
+          "model": "x"
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "empty managed file counts as {}",
+      "files": {
+        "managed/managed-settings.json": ""
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "drop-in with array top level",
+      "files": {
+        "managed/managed-settings.json": {},
+        "managed/managed-settings.d/10-a.json": [
+          1
+        ]
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1
+      }
+    },
+    {
+      "name": "no managed file",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "na"
+      }
+    }
+  ]
+}

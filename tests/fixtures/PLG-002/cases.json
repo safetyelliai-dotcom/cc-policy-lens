@@ -1,0 +1,70 @@
+{
+  "rule": "PLG-002",
+  "cases": [
+    {
+      "name": "enabled plugin with hooks",
+      "files": {
+        "home/.claude/settings.json": {
+          "enabledPlugins": {
+            "tool@mkt": true
+          }
+        },
+        "home/.claude/plugins/cache/mkt/tool/1.0.0/hooks/hooks.json": {
+          "hooks": {}
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "info",
+        "count": 1,
+        "message_contains": "hooks"
+      }
+    },
+    {
+      "name": "enabled plugin with skills only",
+      "files": {
+        "home/.claude/settings.json": {
+          "enabledPlugins": {
+            "tool@mkt": true
+          }
+        },
+        "home/.claude/plugins/cache/mkt/tool/1.0.0/skills/a/SKILL.md": "---\nname: a\n---\n"
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "installed but disabled",
+      "files": {
+        "home/.claude/settings.json": {
+          "enabledPlugins": {
+            "tool@mkt": false
+          }
+        },
+        "home/.claude/plugins/cache/mkt/tool/1.0.0/hooks/hooks.json": {
+          "hooks": {}
+        }
+      },
+      "expect": {
+        "status": "na"
+      }
+    },
+    {
+      "name": "enabled but not cached",
+      "files": {
+        "home/.claude/settings.json": {
+          "enabledPlugins": {
+            "ghost@mkt": true
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "info",
+        "count": 1,
+        "message_contains": "not found"
+      }
+    }
+  ]
+}

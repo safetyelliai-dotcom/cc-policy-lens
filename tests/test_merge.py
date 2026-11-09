@@ -1,4 +1,5 @@
 """merge.py tests: precedence, list merging, shadowing, ignored values, managed drop-ins."""
+import os
 import unittest
 
 from cc_policy_lens import collect, merge
@@ -104,12 +105,65 @@ class MergeTest(FakeEnvTestCase, unittest.TestCase):
         self.assertIn("invalid type", a.ignored[0][2])
 
     def test_string_deny_and_string_bool_not_effective(self):
-        self.env.managed_settings({"permissions": {"deny": "Read(./.env) Bash"}, "sandbox": {"enabled": "false"}})
+        self.env.user({"permissions": {"deny": "Read(./.env) Bash"}, "sandbox": {"enabled": "false"}})
         e = self.eff()
         self.assertIsNone(e.get("permissions.deny"))
-        self.assertIsNone(e.get("sandbox.enabled"))
+        self.assertIsNone(e.get("sandbox.enabled"))       # user files are strict: entry skipped
         self.env.managed_settings({"enabledPlugins": {"x@y": 1}})
         self.assertIsNone(self.eff().get(("enabledPlugins", "x@y")))
+
+    # --- managed fallbacks (managed-settings docs, "Keys that fail closed") ---
+    def test_managed_quoted_boolean_reads_as_boolean(self):
+        self.env.managed_settings({"sandbox": {"enabled": "false"}})
+        e = self.eff()
+        self.assertIs(e.get("sandbox.enabled"), False)
+        self.assertIn("quoted boolean", e.entry("sandbox.enabled").ignored[0][2])
+
+    def test_managed_invalid_locks_fail_closed(self):
+        self.env.managed_settings({"allowManagedHooksOnly": 1, "sandbox": {"enabled": 7, "allowUnsandboxedCommands": 3,
+                                   "failIfUnavailable": 9},
+                                   "permissions": {"disableBypassPermissionsMode": "yes", "defaultMode": 5}})
+        e = self.eff()
+        self.assertIs(e.get("allowManagedHooksOnly"), True)
+        self.assertIs(e.get("sandbox.enabled"), True)
+        self.assertIs(e.get("sandbox.allowUnsandboxedCommands"), False)
+        self.assertIsNone(e.get("sandbox.failIfUnavailable"))
+        self.assertEqual(e.get("permissions.disableBypassPermissionsMode"), "disable")
+        self.assertEqual(e.get("permissions.defaultMode"), "default")
+
+    def test_managed_invalid_deny_withholds_allow(self):
+        self.env.managed_settings({"permissions": {"deny": "oops", "allow": ["Bash(*)"]}})
+        self.env.user({"permissions": {"allow": ["Read"]}})
+        e = self.eff()
+        self.assertEqual(e.get("permissions.allow"), ["Read"])
+        self.assertIn("permissions.allow", e.managed_withheld)
+
+    def test_managed_invalid_allowlists_become_empty(self):
+        self.env.managed_settings({"allowedHttpHookUrls": "https://x", "strictKnownMarketplaces": {}})
+        e = self.eff()
+        self.assertEqual(e.get("allowedHttpHookUrls"), [])
+        self.assertEqual(e.get("strictKnownMarketplaces"), [])
+
+    def test_managed_null_removes_and_invalid_version_dropped(self):
+        self.env.managed_settings({"model": None, "requiredMinimumVersion": 2})
+        e = self.eff()
+        self.assertIsNone(e.get("model"))
+        self.assertIsNone(e.get("requiredMinimumVersion"))
+
+    def test_invalid_enum_values_skipped_in_user(self):
+        self.env.user({"permissions": {"disableBypassPermissionsMode": "true", "defaultMode": "yolo"}})
+        e = self.eff()
+        self.assertIsNone(e.get("permissions.disableBypassPermissionsMode"))
+        self.assertIsNone(e.get("permissions.defaultMode"))
+
+    def test_hidden_dropins_ignored(self):
+        self.env.write("managed-settings.d/.10-hidden.json", {"model": "hidden"}, self.env.managed)
+        self.env.write("managed-settings.d/20-x.json", {"model": "x"}, self.env.managed)
+        self.assertEqual(self.eff().get("model"), "x")
+
+    def test_managed_io_error_fails_closed(self):
+        os.makedirs(os.path.join(self.env.managed, "managed-settings.json"))   # unreadable as a file
+        self.assertIsNotNone(self.eff().managed_parse_error)
 
     # --- Phase 3 review regressions ---
     def test_higher_scalar_replaces_lower_object(self):
@@ -137,14 +191,14 @@ class MergeTest(FakeEnvTestCase, unittest.TestCase):
         self.env.write("managed-settings.d/10-x.json", {"sandbox": False}, self.env.managed)
         self.assertIsNone(self.eff().get("sandbox.enabled"))
 
-    def test_unverified_managed_only_keys_fail_closed(self):
+    def test_lock_keys_have_no_effect_outside_managed(self):
         self.env.user({"allowManagedPermissionRulesOnly": True, "allowManagedMcpServersOnly": True,
                        "sandbox": {"network": {"allowManagedDomainsOnly": True}}})
         e = self.eff()
         for k in ("allowManagedPermissionRulesOnly", "allowManagedMcpServersOnly",
                   "sandbox.network.allowManagedDomainsOnly"):
             self.assertIsNone(e.get(k), k)
-            self.assertIn("unverified", e.entry(k).ignored[0][2])
+            self.assertIn("managed-only", e.entry(k).ignored[0][2])
 
     def test_too_deep_managed_is_not_fail_closed(self):
         deep = cur = {}

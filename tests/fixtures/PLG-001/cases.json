@@ -1,0 +1,68 @@
+{
+  "rule": "PLG-001",
+  "cases": [
+    {
+      "name": "no allowlist",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 2
+      }
+    },
+    {
+      "name": "managed allowlist and sideload lock",
+      "files": {
+        "managed/managed-settings.json": {
+          "strictKnownMarketplaces": [
+            {
+              "source": "github",
+              "repo": "acme/plugins"
+            }
+          ],
+          "disableSideloadFlags": true
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "empty allowlist blocks everything",
+      "files": {
+        "managed/managed-settings.json": {
+          "strictKnownMarketplaces": [],
+          "disableSideloadFlags": true
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "info",
+        "count": 1
+      }
+    },
+    {
+      "name": "allowlist in user settings has no effect",
+      "files": {
+        "home/.claude/settings.json": {
+          "strictKnownMarketplaces": [
+            {
+              "source": "github",
+              "repo": "a/b"
+            }
+          ]
+        },
+        "managed/managed-settings.json": {
+          "disableSideloadFlags": true
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1
+      }
+    }
+  ]
+}

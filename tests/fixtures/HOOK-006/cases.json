@@ -1,0 +1,40 @@
+{
+  "rule": "HOOK-006",
+  "cases": [
+    {
+      "name": "not set",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "info",
+        "count": 1
+      }
+    },
+    {
+      "name": "managed only",
+      "files": {
+        "managed/managed-settings.json": {
+          "allowManagedHooksOnly": true
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "set in user settings has no effect",
+      "files": {
+        "home/.claude/settings.json": {
+          "allowManagedHooksOnly": true
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "info",
+        "count": 1
+      }
+    }
+  ]
+}

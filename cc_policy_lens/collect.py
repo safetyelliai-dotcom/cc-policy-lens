@@ -397,7 +397,10 @@ def collect_all(paths: PathSet) -> Collection:
     # managed: base file + drop-ins (alphabetical) + MCP file
     col.managed_dir_info = stat_file(paths.managed_dir)
     col.settings["managed"] = read_json(paths.managed_settings, "managed")
+    # managed docs: drop-ins are *.json in alphabetical order; hidden files are ignored
     for p in list_dir(paths.managed_dropins, suffix=".json", errors=col.errors):
+        if os.path.basename(p).startswith("."):
+            continue
         col.managed_dropins.append(read_json(p, "managed"))
     col.managed_mcp = read_json(paths.managed_mcp, "managed_mcp")
 

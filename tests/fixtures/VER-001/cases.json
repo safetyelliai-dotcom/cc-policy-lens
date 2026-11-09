@@ -1,0 +1,54 @@
+{
+  "rule": "VER-001",
+  "cases": [
+    {
+      "name": "no minimum version",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "low",
+        "count": 1
+      }
+    },
+    {
+      "name": "managed minimum version",
+      "files": {
+        "managed/managed-settings.json": {
+          "requiredMinimumVersion": "2.1.300"
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "user value has no effect",
+      "files": {
+        "home/.claude/settings.json": {
+          "requiredMinimumVersion": "2.1.300",
+          "minimumVersion": "2.1.200"
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "low",
+        "count": 1
+      }
+    },
+    {
+      "name": "managed invalid value fails open",
+      "files": {
+        "managed/managed-settings.json": {
+          "requiredMinimumVersion": "latest"
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "low",
+        "count": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "rule": "PERM-001",
+  "cases": [
+    {
+      "name": "user bypassPermissions",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "defaultMode": "bypassPermissions"
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "critical",
+        "count": 1
+      }
+    },
+    {
+      "name": "acceptEdits",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "defaultMode": "acceptEdits"
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "project bypass ignored on new versions",
+      "files": {
+        "project/.claude/settings.json": {
+          "permissions": {
+            "defaultMode": "bypassPermissions"
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "info",
+        "count": 1,
+        "message_contains": "v2.1.257"
+      }
+    },
+    {
+      "name": "bypass but locked by managed",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "defaultMode": "bypassPermissions"
+          }
+        },
+        "managed/managed-settings.json": {
+          "permissions": {
+            "disableBypassPermissionsMode": "disable"
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "low",
+        "count": 1,
+        "message_contains": "blocks it"
+      }
+    },
+    {
+      "name": "not set",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "pass"
+      }
+    }
+  ]
+}

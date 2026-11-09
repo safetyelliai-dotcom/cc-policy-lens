@@ -1,0 +1,59 @@
+{
+  "rule": "PERM-002",
+  "cases": [
+    {
+      "name": "lock missing",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1
+      }
+    },
+    {
+      "name": "locked in managed",
+      "files": {
+        "managed/managed-settings.json": {
+          "permissions": {
+            "disableBypassPermissionsMode": "disable"
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "locked only in user settings",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "disableBypassPermissionsMode": "disable"
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "low",
+        "count": 1
+      }
+    },
+    {
+      "name": "invalid value in user is skipped",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "disableBypassPermissionsMode": "true"
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1
+      }
+    }
+  ]
+}

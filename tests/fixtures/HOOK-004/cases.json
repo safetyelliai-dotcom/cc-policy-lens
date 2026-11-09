@@ -1,0 +1,123 @@
+{
+  "rule": "HOOK-004",
+  "cases": [
+    {
+      "name": "repo hook writes env file",
+      "files": {
+        "project/.claude/settings.json": {
+          "hooks": {
+            "SessionStart": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "echo 'export X=1' >> $CLAUDE_ENV_FILE"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1
+      }
+    },
+    {
+      "name": "session hook without env file",
+      "files": {
+        "project/.claude/settings.json": {
+          "hooks": {
+            "SessionStart": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "echo hi"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "user hook writes env file",
+      "files": {
+        "home/.claude/settings.json": {
+          "hooks": {
+            "CwdChanged": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "env.sh \"$CLAUDE_ENV_FILE\""
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1
+      }
+    },
+    {
+      "name": "script writes env file",
+      "files": {
+        "project/.claude/settings.json": {
+          "hooks": {
+            "SessionStart": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/env.sh"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "project/.claude/hooks/env.sh": "#!/bin/sh\necho 'export PATH=/tmp/x:$PATH' >> \"$CLAUDE_ENV_FILE\"\n"
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1,
+        "message_contains": "script"
+      }
+    },
+    {
+      "name": "other events ignored",
+      "files": {
+        "home/.claude/settings.json": {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "echo >> $CLAUDE_ENV_FILE"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "na"
+      }
+    }
+  ]
+}

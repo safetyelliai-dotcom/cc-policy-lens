@@ -1,0 +1,102 @@
+{
+  "rule": "HOOK-002",
+  "cases": [
+    {
+      "name": "policy hook fails open",
+      "files": {
+        "home/.claude/settings.json": {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "guard"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1,
+        "message_contains": "fails open"
+      }
+    },
+    {
+      "name": "policy hook blocks on failure",
+      "files": {
+        "home/.claude/settings.json": {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "guard",
+                    "onFailure": "block"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "async policy hook",
+      "files": {
+        "home/.claude/settings.json": {
+          "hooks": {
+            "PermissionRequest": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "g",
+                    "async": true,
+                    "onFailure": "block"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1,
+        "message_contains": "async"
+      }
+    },
+    {
+      "name": "no policy events",
+      "files": {
+        "home/.claude/settings.json": {
+          "hooks": {
+            "PostToolUse": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "fmt"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "na"
+      }
+    }
+  ]
+}

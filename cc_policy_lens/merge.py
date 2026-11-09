@@ -27,22 +27,27 @@ Path = tuple[str, ...]
 # Precedence, highest first. "cli" (--settings) is not readable from disk and is never present.
 PRECEDENCE = ("managed", "cli", "local", "project", "user")
 
-# Keys honored only in managed settings (settings docs, "Managed only").
-MANAGED_ONLY: dict[Path, str] = {
-    ("allowManagedHooksOnly",): "managed-only key",
-    ("strictKnownMarketplaces",): "managed-only key",
-    ("allowedMarketplaces",): "managed-only key (alias of strictKnownMarketplaces)",
-    ("requiredMinimumVersion",): "managed-only key (v2.1.163+)",
-    # TODO(verify): believed managed-only, not confirmed in docs. Treated as having no effect
-    # outside managed so an auditor never reports a user-set lock as protective (fail closed).
-    ("allowManagedPermissionRulesOnly",): "managed-only key (unverified)",
-    ("allowManagedMcpServersOnly",): "managed-only key (unverified)",
-    ("sandbox", "network", "allowManagedDomainsOnly"): "managed-only key (unverified)",
-}
+# Keys Claude Code reads only from a managed source. Source: managed-settings docs,
+# "Keys only a managed source can set" table, plus settings-reference index Scope = Managed
+# (checked 2026-11-09).
+_MANAGED_ONLY_KEYS = (
+    "allowAllClaudeAiMcps", "allowedChannelPlugins", "allowManagedHooksOnly", "allowManagedMcpServersOnly",
+    "allowManagedPermissionRulesOnly", "blockedMarketplaces", "channelsEnabled", "disableCommandPluginSources",
+    "disableSideloadFlags", "forceRemoteSettingsRefresh", "managedMcpServers", "managedSourcesBehavior",
+    "parentSettingsBehavior", "pluginSuggestionMarketplaces", "pluginTrustMessage", "policyHelper",
+    "sandbox.filesystem.allowManagedReadPathsOnly", "sandbox.network.allowManagedDomainsOnly",
+    "strictKnownMarketplaces", "strictPluginOnlyCustomization", "wslInheritsWindowsSettings",
+    "requiredMinimumVersion", "requiredMaximumVersion",
+)
+MANAGED_ONLY: dict[Path, str] = {tuple(k.split(".")): "managed-only key" for k in _MANAGED_ONLY_KEYS}
+# TODO(verify): allowedMarketplaces is not in the settings index; treated as a managed-only
+# alias of strictKnownMarketplaces (fail closed: no effect outside managed).
+MANAGED_ONLY[("allowedMarketplaces",)] = "managed-only key (alias, unverified)"
 
-# Expected value types for keys rules depend on. A wrong type goes to ``ignored`` so that
-# e.g. a string ``deny`` never substring-matches and ``"false"`` is never truthy.
-# TODO(verify): whether Claude Code drops only the key or the whole file on a type error.
+# Expected value types for keys rules depend on. In user/project/local files Claude Code skips
+# an entry that fails validation and keeps the rest of the file (settings docs, "Fix a broken
+# settings file"), so a wrong type goes to ``ignored``. Managed values have their own fallbacks
+# (``_managed_fallback``).
 _STAR = "*"
 KNOWN_TYPES: dict[Path, type | tuple[type, ...]] = {
     ("permissions", "allow"): list, ("permissions", "ask"): list, ("permissions", "deny"): list,
@@ -50,22 +55,54 @@ KNOWN_TYPES: dict[Path, type | tuple[type, ...]] = {
     ("permissions", "defaultMode"): str, ("permissions", "disableBypassPermissionsMode"): str,
     ("sandbox", "enabled"): bool, ("sandbox", "failIfUnavailable"): bool,
     ("sandbox", "allowUnsandboxedCommands"): bool,
+    ("sandbox", "network", "allowManagedDomainsOnly"): bool,
     ("allowManagedHooksOnly",): bool, ("allowManagedPermissionRulesOnly",): bool,
-    ("allowManagedMcpServersOnly",): bool, ("disableAllHooks",): bool,
+    ("allowManagedMcpServersOnly",): bool, ("disableAllHooks",): bool, ("disableSideloadFlags",): bool,
     ("enableAllProjectMcpServers",): bool,
     ("enabledMcpjsonServers",): list, ("disabledMcpjsonServers",): list,
     ("allowedHttpHookUrls",): list, ("httpHookAllowedEnvVars",): list,
+    ("strictKnownMarketplaces",): list, ("allowedMarketplaces",): list,
     ("requiredMinimumVersion",): str, ("minimumVersion",): str,
     ("hooks", _STAR): list, ("env", _STAR): str,
     ("enabledPlugins", _STAR): bool,
 }
+# Allowed string values (checked like types).
+KNOWN_VALUES: dict[Path, frozenset[str]] = {
+    ("permissions", "disableBypassPermissionsMode"): frozenset({"disable"}),
+    # TODO(verify): full mode list; an unknown mode is treated as invalid.
+    ("permissions", "defaultMode"): frozenset({"default", "acceptEdits", "plan", "auto", "dontAsk",
+                                               "bypassPermissions"}),
+}
 
-# Sources Claude Code may use that this tool cannot read (reported as caveats).
-# TODO(verify): precedence between server-managed, MDM/plist/registry and file-based managed
-# settings. If another managed source wins, the file-based policy shown here is not effective.
+# Managed fallbacks for values that are present but invalid (managed-settings docs,
+# "Keys that fail closed" / "Invalid values inside sandbox", v2.1.282+ / v2.1.283+).
+_DROP = object()
+_RESTRICTIVE_TRUE = {("allowManagedHooksOnly",), ("allowManagedPermissionRulesOnly",),
+                     ("allowManagedMcpServersOnly",), ("disableSideloadFlags",),
+                     ("sandbox", "enabled"), ("sandbox", "network", "allowManagedDomainsOnly")}
+_MANAGED_FALLBACK: dict[Path, Any] = {
+    ("permissions", "disableBypassPermissionsMode"): "disable",
+    ("permissions", "defaultMode"): "default",
+    ("sandbox", "allowUnsandboxedCommands"): False,
+    ("sandbox", "failIfUnavailable"): _DROP,        # never stops the fleet from starting
+    ("disableAllHooks",): _DROP,
+    ("requiredMinimumVersion",): _DROP,             # fails open by design
+    ("requiredMaximumVersion",): _DROP,
+    ("allowedHttpHookUrls",): [],                   # empty managed allowlist
+    ("httpHookAllowedEnvVars",): [],
+    ("strictKnownMarketplaces",): [],
+    ("allowedMarketplaces",): [],
+    ("permissions", "deny"): _DROP,                 # + withholds managed allow/additionalDirectories
+    ("permissions", "ask"): _DROP,
+}
+_WITHHELD_WHEN_DENY_INVALID = (("permissions", "allow"), ("permissions", "additionalDirectories"))
+
+# Managed sources this tool cannot read. Managed-settings docs: by default ("first-wins")
+# Claude Code uses the highest-ranked source with a policy key — server-managed, then MDM
+# (macOS plist / HKLM registry), then the managed files — and ignores the rest.
 CAVEATS = (
-    "server-managed and MDM (plist/registry) managed settings are not read; "
-    "if present they may replace the file-based managed settings shown here",
+    "server-managed settings and MDM policies (macOS plist, Windows HKLM registry) are not read; "
+    "if one delivers a policy, Claude Code uses it instead of the managed files shown here (first-wins)",
     "--settings (cli layer) and environment variables are not visible to this tool",
 )
 
@@ -75,9 +112,8 @@ IGNORED_VALUES: list[tuple[Path, frozenset[Any], frozenset[str], str]] = [
      "ignored from project/local settings since v2.1.257"),
 ]
 
-# TODO(verify): settings docs list env vars that project/local `env` cannot set
-# (e.g. CLAUDE_CODE_OAUTH_TOKEN). The full list was not confirmed, so env is merged as-is
-# and ENV rules must not assume a project-layer value is ineffective.
+# TODO(verify): settings-reference "Variables Claude Code ignores in env" lists telemetry export
+# variables ignored from project/local env (not yet transcribed). env is merged as-is.
 
 
 @dataclass
@@ -85,6 +121,7 @@ class EffectiveConfig:
     entries: dict[Path, Entry] = field(default_factory=dict)
     layers_present: list[str] = field(default_factory=list)
     managed_parse_error: str | None = None     # Claude Code refuses to start (fail closed)
+    managed_withheld: list[str] = field(default_factory=list)   # grants withheld by a managed fallback
     unreadable: list[tuple[str, str]] = field(default_factory=list)   # (layer, masked error)
     raw: dict[str, dict[str, Any]] = field(default_factory=dict)      # layer -> merged raw doc
     caveats: tuple[str, ...] = CAVEATS
@@ -111,7 +148,9 @@ class EffectiveConfig:
 # ---------------------------------------------------------------- helpers
 
 def _flatten(obj: Any, prefix: Path = ()) -> Iterable[tuple[Path, Any]]:
-    if isinstance(obj, dict):
+    if isinstance(obj, dict) and prefix in KNOWN_TYPES:
+        yield prefix, obj                        # an object where a scalar/list is expected: one leaf
+    elif isinstance(obj, dict):
         for k, v in obj.items():                 # an empty dict yields nothing (deep-merge no-op)
             yield from _flatten(v, prefix + (str(k),))
     elif prefix:
@@ -164,8 +203,10 @@ def merge(col: Collection) -> EffectiveConfig:
         for doc in docs:
             if doc.info.error:
                 eff.unreadable.append((layer, doc.info.error))
-                # too_deep/too_large are this tool's limits, not Claude Code's: not fail-closed
-                if layer == "managed" and doc.info.error_kind in ("parse", "not_object"):
+                # Managed docs: unparsable or non-object -> refuses to start; an OS permission
+                # denial -> starts without that source; other read failures (io) -> exits.
+                # too_deep/too_large are this tool's limits, not Claude Code's.
+                if layer == "managed" and doc.info.error_kind in ("parse", "not_object", "io"):
                     # managed settings docs: an unparsable managed file stops Claude Code from starting
                     eff.managed_parse_error = doc.info.error
                 continue
@@ -185,11 +226,29 @@ def merge(col: Collection) -> EffectiveConfig:
     higher_prefixes: set[Path] = set()    # strict prefixes of those paths (objects)
     for layer, leaves in per_layer:
         layer_paths: list[Path] = []
+        withhold = False
+        if layer == "managed":
+            withhold = any(p in (("permissions", "deny"), ("permissions", "ask")) and _type_error(p, v)
+                           for p, v, _ in leaves)
         for path, value, prov in leaves:
             e = eff.entries.get(path)
             if e is None:
                 e = eff.entries[path] = Entry(key=path, value=None, source=None)
-            reason = _ignore_reason(path, value, layer) or _type_error(path, value)
+            if layer == "managed":
+                if value is None:
+                    continue                           # managed docs: null removes the key
+                if withhold and path in _WITHHELD_WHEN_DENY_INVALID:
+                    e.ignored.append((value, prov, "withheld: managed deny/ask list is invalid"))
+                    eff.managed_withheld.append(".".join(path))
+                    continue
+                value, note = _managed_fallback(path, value)
+                if note:
+                    e.ignored.append((value if value is not _DROP else None, prov, note))
+                if value is _DROP:
+                    continue
+                reason = _ignore_reason(path, value, layer)
+            else:
+                reason = _ignore_reason(path, value, layer) or _type_error(path, value)
             if reason:
                 e.ignored.append((value, prov, reason))
                 continue
@@ -213,6 +272,23 @@ def merge(col: Collection) -> EffectiveConfig:
     return eff
 
 
+def _managed_fallback(path: Path, value: Any) -> tuple[Any, str | None]:
+    """Value Claude Code uses for a managed entry, and a note when it differs from the file."""
+    if _type_error(path, value) is None:
+        return value, None
+    expected = KNOWN_TYPES.get(path)
+    if expected is bool and isinstance(value, str) and value in ("true", "false") and path != ("disableAllHooks",):
+        return value == "true", "quoted boolean in managed settings; read as a boolean"
+    if path in _RESTRICTIVE_TRUE:
+        return True, "invalid in managed settings; Claude Code treats it as true (fail closed)"
+    if path in _MANAGED_FALLBACK:
+        fb = _MANAGED_FALLBACK[path]
+        if fb is _DROP:
+            return _DROP, "invalid in managed settings; dropped"
+        return fb, f"invalid in managed settings; Claude Code treats it as {fb!r} (fail closed)"
+    return _DROP, "invalid in managed settings; dropped"
+
+
 def _type_error(path: Path, value: Any) -> str | None:
     expected = KNOWN_TYPES.get(path)
     if expected is None and len(path) == 2:
@@ -222,6 +298,9 @@ def _type_error(path: Path, value: Any) -> str | None:
     # bool is a subclass of int; only accept real bools where bool is expected and vice versa
     ok = isinstance(value, expected) and not (expected is not bool and isinstance(value, bool))
     if ok:
+        allowed = KNOWN_VALUES.get(path)
+        if allowed is not None and value not in allowed:
+            return f"invalid value {value!r}"
         return None
     name = expected.__name__ if isinstance(expected, type) else "/".join(t.__name__ for t in expected)
     return f"invalid type: expected {name}, got {type(value).__name__}"

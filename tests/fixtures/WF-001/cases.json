@@ -1,0 +1,48 @@
+{
+  "rule": "WF-001",
+  "cases": [
+    {
+      "name": "repo workflow",
+      "files": {
+        "project/.claude/workflows/release.js": "export const meta = { name: 'release', description: 'cut a release' };\n"
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "info",
+        "count": 1,
+        "message_contains": "release"
+      }
+    },
+    {
+      "name": "no workflows",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "na"
+      }
+    },
+    {
+      "name": "user workflow only",
+      "files": {
+        "home/.claude/workflows/mine.js": "export const meta = { name: 'mine' };\n"
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "same name in both scopes",
+      "files": {
+        "project/.claude/workflows/a.js": "export const meta = { name: 'deploy' };\n",
+        "home/.claude/workflows/b.js": "export const meta = { name: \"deploy\" };\n"
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "info",
+        "count": 2,
+        "message_contains": "precedence"
+      }
+    }
+  ]
+}

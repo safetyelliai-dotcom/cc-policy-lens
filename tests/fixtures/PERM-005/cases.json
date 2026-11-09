@@ -1,0 +1,72 @@
+{
+  "rule": "PERM-005",
+  "cases": [
+    {
+      "name": "network tool allowed",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "allow": [
+              "Bash(curl *)"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1,
+        "message_contains": "curl"
+      }
+    },
+    {
+      "name": "ordinary tools",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "allow": [
+              "Bash(git log *)",
+              "WebFetch(domain:example.com)"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "absolute path and legacy syntax",
+      "files": {
+        "project/.claude/settings.json": {
+          "permissions": {
+            "allow": [
+              "Bash(/usr/bin/wget:*)"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1,
+        "message_contains": "wget"
+      }
+    },
+    {
+      "name": "tool name as substring is fine",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "allow": [
+              "Bash(curlie-lint *)"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    }
+  ]
+}

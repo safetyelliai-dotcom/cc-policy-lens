@@ -1,0 +1,85 @@
+{
+  "rule": "MCP-001",
+  "cases": [
+    {
+      "name": "repo defines a server",
+      "files": {
+        "project/.mcp.json": {
+          "mcpServers": {
+            "docs": {
+              "command": "npx",
+              "args": [
+                "-y",
+                "docs-mcp@1.0.0"
+              ]
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1
+      }
+    },
+    {
+      "name": "server disabled by user",
+      "files": {
+        "project/.mcp.json": {
+          "mcpServers": {
+            "docs": {
+              "command": "x"
+            }
+          }
+        },
+        "home/.claude/settings.json": {
+          "disabledMcpjsonServers": [
+            "docs"
+          ]
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "repo auto-approves its servers",
+      "files": {
+        "project/.mcp.json": {
+          "mcpServers": {
+            "docs": {
+              "command": "x"
+            }
+          }
+        },
+        "project/.claude/settings.json": {
+          "enableAllProjectMcpServers": true
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 2
+      }
+    },
+    {
+      "name": "no .mcp.json",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "na"
+      }
+    },
+    {
+      "name": "no project",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "na"
+      },
+      "project": false
+    }
+  ]
+}

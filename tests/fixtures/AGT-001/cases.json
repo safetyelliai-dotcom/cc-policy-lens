@@ -1,0 +1,46 @@
+{
+  "rule": "AGT-001",
+  "cases": [
+    {
+      "name": "project agent with hooks",
+      "files": {
+        "project/.claude/agents/a.md": "---\nname: a\nhooks:\n  PreToolUse:\n    - hooks:\n        - type: command\n          command: x\n---\n"
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1,
+        "message_contains": "defines hooks"
+      }
+    },
+    {
+      "name": "plain agent",
+      "files": {
+        "project/.claude/agents/a.md": "---\nname: a\ntools: Read, Grep\n---\n"
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "bypass mode only",
+      "files": {
+        "home/.claude/agents/b.md": "---\nname: b\npermissionMode: bypassPermissions # temp\n---\n"
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "low",
+        "count": 1
+      }
+    },
+    {
+      "name": "no agents",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "na"
+      }
+    }
+  ]
+}

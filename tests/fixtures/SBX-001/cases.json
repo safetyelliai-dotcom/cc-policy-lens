@@ -1,0 +1,81 @@
+{
+  "rule": "SBX-001",
+  "cases": [
+    {
+      "name": "sandbox off by default",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1,
+        "message_contains": "not enabled"
+      }
+    },
+    {
+      "name": "sandbox strict",
+      "files": {
+        "home/.claude/settings.json": {
+          "sandbox": {
+            "enabled": true,
+            "failIfUnavailable": true,
+            "allowUnsandboxedCommands": false
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "enabled but fails open",
+      "files": {
+        "home/.claude/settings.json": {
+          "sandbox": {
+            "enabled": true
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 2
+      }
+    },
+    {
+      "name": "project turns it off over user",
+      "files": {
+        "home/.claude/settings.json": {
+          "sandbox": {
+            "enabled": true,
+            "failIfUnavailable": true,
+            "allowUnsandboxedCommands": false
+          }
+        },
+        "project/.claude/settings.json": {
+          "sandbox": {
+            "enabled": false
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1
+      }
+    },
+    {
+      "name": "windows",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "info",
+        "count": 1
+      },
+      "platform": "win32"
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "rule": "HOOK-001",
+  "cases": [
+    {
+      "name": "repo hook",
+      "files": {
+        "project/.claude/settings.json": {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "./x.sh"
+                  }
+                ],
+                "matcher": "Bash"
+              }
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1,
+        "message_contains": "from project"
+      }
+    },
+    {
+      "name": "user's own hook only",
+      "files": {
+        "home/.claude/settings.json": {
+          "hooks": {
+            "PostToolUse": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "fmt"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "no hooks",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "na"
+      }
+    },
+    {
+      "name": "skill frontmatter hook",
+      "files": {
+        "project/.claude/skills/rel/SKILL.md": "---\nname: rel\nhooks:\n  PreToolUse:\n    - matcher: Bash\n      hooks:\n        - type: command\n          command: ./check.sh\n---\nx\n"
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1,
+        "message_contains": "skill:project"
+      }
+    },
+    {
+      "name": "enabled plugin hook",
+      "files": {
+        "home/.claude/settings.json": {
+          "enabledPlugins": {
+            "tool@mkt": true
+          }
+        },
+        "home/.claude/plugins/cache/mkt/tool/1.0.0/hooks/hooks.json": {
+          "hooks": {
+            "Stop": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "x"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1,
+        "message_contains": "plugin:tool@mkt"
+      }
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "rule": "CFG-001",
+  "cases": [
+    {
+      "name": "managed file world-writable",
+      "files": {
+        "managed/managed-settings.json": {
+          "model": "x"
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "critical",
+        "count": 1,
+        "message_contains": "group/other-writable"
+      },
+      "modes": {
+        "managed/managed-settings.json": "0o666",
+        "managed": "0o755"
+      }
+    },
+    {
+      "name": "managed files root-equivalent and 0644",
+      "files": {
+        "managed/managed-settings.json": {
+          "model": "x"
+        }
+      },
+      "expect": {
+        "status": "pass"
+      },
+      "modes": {
+        "managed/managed-settings.json": "0o644",
+        "managed": "0o755"
+      }
+    },
+    {
+      "name": "no managed directory",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "na"
+      }
+    },
+    {
+      "name": "windows cannot be judged",
+      "files": {
+        "managed/managed-settings.json": {}
+      },
+      "expect": {
+        "status": "unknown"
+      },
+      "platform": "win32"
+    },
+    {
+      "name": "writable drop-in directory",
+      "files": {
+        "managed/managed-settings.json": {},
+        "managed/managed-settings.d/10-a.json": {}
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "critical",
+        "count": 1,
+        "message_contains": "directory"
+      },
+      "modes": {
+        "managed/managed-settings.json": "0o644",
+        "managed": "0o755",
+        "managed/managed-settings.d": "0o777",
+        "managed/managed-settings.d/10-a.json": "0o644"
+      }
+    }
+  ]
+}

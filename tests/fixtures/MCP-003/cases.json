@@ -1,0 +1,81 @@
+{
+  "rule": "MCP-003",
+  "cases": [
+    {
+      "name": "literal token in env",
+      "files": {
+        "project/.mcp.json": {
+          "mcpServers": {
+            "gh": {
+              "command": "x",
+              "env": {
+                "GITHUB_TOKEN": "{{GITHUB}}"
+              }
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1
+      }
+    },
+    {
+      "name": "env reference",
+      "files": {
+        "project/.mcp.json": {
+          "mcpServers": {
+            "gh": {
+              "command": "x",
+              "env": {
+                "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+              }
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "bearer reference vs literal",
+      "files": {
+        "home/.claude.json": {
+          "mcpServers": {
+            "a": {
+              "type": "http",
+              "url": "https://a.example.com",
+              "headers": {
+                "Authorization": "Bearer ${A}"
+              }
+            },
+            "b": {
+              "type": "http",
+              "url": "https://b.example.com",
+              "headers": {
+                "Authorization": "Bearer {{LITERAL}}"
+              }
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1,
+        "message_contains": "'b'"
+      }
+    },
+    {
+      "name": "no servers",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "na"
+      }
+    }
+  ]
+}

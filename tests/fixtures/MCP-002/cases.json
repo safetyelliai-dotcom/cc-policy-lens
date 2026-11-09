@@ -1,0 +1,140 @@
+{
+  "rule": "MCP-002",
+  "cases": [
+    {
+      "name": "unpinned npx package",
+      "files": {
+        "project/.mcp.json": {
+          "mcpServers": {
+            "a": {
+              "command": "npx",
+              "args": [
+                "-y",
+                "@acme/tool"
+              ]
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1
+      }
+    },
+    {
+      "name": "pinned packages",
+      "files": {
+        "project/.mcp.json": {
+          "mcpServers": {
+            "a": {
+              "command": "npx",
+              "args": [
+                "-y",
+                "@acme/tool@1.4.2"
+              ]
+            },
+            "b": {
+              "command": "uvx",
+              "args": [
+                "mcp-server-git==0.6.2"
+              ]
+            },
+            "c": {
+              "command": "/usr/local/bin/my-server"
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "latest tag and range",
+      "files": {
+        "home/.claude.json": {
+          "mcpServers": {
+            "a": {
+              "command": "npx",
+              "args": [
+                "tool@latest"
+              ]
+            },
+            "b": {
+              "command": "bunx",
+              "args": [
+                "x@^1.2.0"
+              ]
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 2
+      }
+    },
+    {
+      "name": "docker without digest",
+      "files": {
+        "project/.mcp.json": {
+          "mcpServers": {
+            "d": {
+              "command": "docker",
+              "args": [
+                "run",
+                "-i",
+                "--rm",
+                "ghcr.io/acme/mcp:1"
+              ]
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "low",
+        "count": 1
+      }
+    },
+    {
+      "name": "command string with flags",
+      "files": {
+        "project/.mcp.json": {
+          "mcpServers": {
+            "a": {
+              "command": "npx -y --package=@acme/tool@2.0.0 tool"
+            },
+            "b": {
+              "command": "pipx run mcp-x"
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1,
+        "message_contains": "mcp-x"
+      }
+    },
+    {
+      "name": "no stdio servers",
+      "files": {
+        "project/.mcp.json": {
+          "mcpServers": {
+            "r": {
+              "type": "http",
+              "url": "https://mcp.example.com"
+            }
+          }
+        }
+      },
+      "expect": {
+        "status": "na"
+      }
+    }
+  ]
+}

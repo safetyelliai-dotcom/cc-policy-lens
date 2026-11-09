@@ -1,0 +1,70 @@
+{
+  "rule": "ENV-001",
+  "cases": [
+    {
+      "name": "literal key in env",
+      "files": {
+        "home/.claude/settings.json": {
+          "env": {
+            "ANTHROPIC_API_KEY": "{{ANTHROPIC}}"
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1
+      }
+    },
+    {
+      "name": "references and plain values",
+      "files": {
+        "home/.claude/settings.json": {
+          "env": {
+            "API_TOKEN": "${API_TOKEN}",
+            "NODE_ENV": "dev"
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "secret-like name with plain value",
+      "files": {
+        "project/.claude/settings.json": {
+          "env": {
+            "DB_PASSWORD": "hunter22"
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 1,
+        "message_contains": "secret-like name"
+      }
+    },
+    {
+      "name": "shadowed layers are still checked",
+      "files": {
+        "home/.claude/settings.json": {
+          "env": {
+            "GH": "{{GITHUB}}"
+          }
+        },
+        "project/.claude/settings.json": {
+          "env": {
+            "GH": "${GH}"
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1
+      }
+    }
+  ]
+}

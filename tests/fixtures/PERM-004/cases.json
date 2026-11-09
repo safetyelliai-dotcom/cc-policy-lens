@@ -1,0 +1,76 @@
+{
+  "rule": "PERM-004",
+  "cases": [
+    {
+      "name": "bare Bash allowed in project",
+      "files": {
+        "project/.claude/settings.json": {
+          "permissions": {
+            "allow": [
+              "Bash"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1
+      }
+    },
+    {
+      "name": "narrow Bash rule",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "allow": [
+              "Bash(npm run test *)"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "wildcard in local; malformed user value skipped",
+      "files": {
+        "project/.claude/settings.local.json": {
+          "permissions": {
+            "allow": [
+              "Bash(*)"
+            ]
+          }
+        },
+        "home/.claude/settings.json": {
+          "permissions": {
+            "allow": "Bash"
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1
+      }
+    },
+    {
+      "name": "legacy prefix wildcard",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "allow": [
+              "Bash(:*)"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1
+      }
+    }
+  ]
+}

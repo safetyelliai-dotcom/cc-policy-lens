@@ -124,6 +124,7 @@ class Finding:
     rule_id: str
     severity: str
     message: str                      # language-neutral, already masked
+    evidence: str | None = None       # masked setting value / location detail
     source_layer: str | None = None
     source_path: str | None = None
 

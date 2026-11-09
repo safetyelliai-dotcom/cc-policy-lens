@@ -1,0 +1,97 @@
+{
+  "rule": "PERM-003",
+  "cases": [
+    {
+      "name": "no deny rules",
+      "files": {
+        "home/.claude/settings.json": {}
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 5
+      }
+    },
+    {
+      "name": "all sensitive paths denied",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "deny": [
+              "Read(~/.ssh/**)",
+              "Read(~/.aws/**)"
+            ]
+          }
+        },
+        "project/.claude/settings.json": {
+          "permissions": {
+            "deny": [
+              "Read(./.env)",
+              "Read(./.env.*)",
+              "Read(**/*.pem)"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "bare Read denies everything",
+      "files": {
+        "managed/managed-settings.json": {
+          "permissions": {
+            "deny": [
+              "Read"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "pem rule too narrow",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "deny": [
+              "Read(~/.ssh/**)",
+              "Read(~/.aws/**)",
+              "Read(.env)",
+              "Read(.env.*)",
+              "Read(./*.pem)"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "high",
+        "count": 1,
+        "message_contains": "*.pem"
+      }
+    },
+    {
+      "name": "directory rule covers contents (gitignore)",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "deny": [
+              "Read(~/.ssh)",
+              "Read(~/.aws/)",
+              "Read(//**/.env)",
+              "Read(**/.env.*)",
+              "Read(//**/*.pem)"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    }
+  ]
+}

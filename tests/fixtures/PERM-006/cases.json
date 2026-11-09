@@ -1,0 +1,71 @@
+{
+  "rule": "PERM-006",
+  "cases": [
+    {
+      "name": "repo adds allow rules",
+      "files": {
+        "project/.claude/settings.json": {
+          "permissions": {
+            "allow": [
+              "Bash(npm test)"
+            ],
+            "additionalDirectories": [
+              "../shared"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "fail",
+        "severity": "medium",
+        "count": 2
+      }
+    },
+    {
+      "name": "repo only adds deny rules",
+      "files": {
+        "project/.claude/settings.json": {
+          "permissions": {
+            "deny": [
+              "Read(./.env)"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    },
+    {
+      "name": "no project",
+      "files": {
+        "home/.claude/settings.json": {
+          "permissions": {
+            "allow": [
+              "Read"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "na"
+      },
+      "project": false
+    },
+    {
+      "name": "local allow rules are not the repo's",
+      "files": {
+        "project/.claude/settings.local.json": {
+          "permissions": {
+            "allow": [
+              "Bash(*)"
+            ]
+          }
+        }
+      },
+      "expect": {
+        "status": "pass"
+      }
+    }
+  ]
+}
